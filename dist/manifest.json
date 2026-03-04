@@ -1,0 +1,17 @@
+{
+    "name": "TimelyBus",
+    "short_name": "TimelyBus",
+    "description": "徳島バス 時刻データ管理アプリ",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "#0a0a0f",
+    "theme_color": "#6366f1",
+    "icons": [
+        {
+            "src": "vite.svg",
+            "sizes": "192x192",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        }
+    ]
+}
