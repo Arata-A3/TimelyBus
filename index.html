@@ -1,27 +1,478 @@
-<!doctype html>
-<html lang="en">
-
+<!DOCTYPE html>
+<html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#6366f1" />
-  <link rel="manifest" href="./manifest.json" />
-  <link rel="icon" type="image/png" href="./icon.png" />
-  <link rel="apple-touch-icon" href="./icon.png" />
-  <title>TimelyBus - 徳島バス時刻データ</title>
-  <script type="module" crossorigin src="./assets/index-IVcokU_7.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-NZHr9IcX.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimelyBus - 徳島バス時刻データ</title>
+    <style>
+        /* CSS from index.css */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        :root {
+            --bg-color: #0d1117;
+            --surface-color: rgba(22, 27, 34, 0.7);
+            --text-primary: #f0f6fc;
+            --text-secondary: #8b949e;
+            --accent-primary: #58a6ff;
+            --accent-hover: #3182ce;
+            --accent-glow: rgba(88, 166, 255, 0.4);
+            --success-color: #2ea043;
+            --success-glow: rgba(46, 160, 67, 0.4);
+            --border-color: rgba(240, 246, 252, 0.1);
+            --border-radius-lg: 16px;
+            --border-radius-md: 12px;
+            --border-radius-sm: 8px;
+            --spacing-xs: 4px;
+            --spacing-sm: 8px;
+            --spacing-md: 16px;
+            --spacing-lg: 24px;
+            --spacing-xl: 32px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #app {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 600px;
+            margin: 0 auto;
+            width: 100%;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .glass-card {
+            background: var(--surface-color);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-lg);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-md) var(--spacing-lg);
+            background: var(--surface-color);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-md);
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(4px);
+            width: 100%;
+        }
+
+        .btn:hover { background: rgba(255, 255, 255, 0.1); border-color: var(--text-secondary); }
+
+        .btn-primary {
+            background: var(--accent-primary);
+            color: #000;
+            border: none;
+            box-shadow: 0 4px 12px var(--accent-glow);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px var(--accent-glow);
+        }
+
+        .input-field {
+            width: 100%;
+            padding: var(--spacing-md);
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-md);
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .input-field:focus { outline: none; border-color: var(--accent-primary); box-shadow: 0 0 0 2px var(--accent-glow); }
+
+        .app-header {
+            padding: var(--spacing-md);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(13, 17, 23, 0.8);
+            backdrop-filter: blur(8px);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .header-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            cursor: pointer;
+        }
+
+        .page-container {
+            padding: var(--spacing-lg);
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-lg);
+            flex: 1;
+        }
+
+        .hidden { display: none !important; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 var(--accent-glow); }
+            70% { box-shadow: 0 0 0 20px rgba(88, 166, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(88, 166, 255, 0); }
+        }
+
+        .animate-pulse { animation: pulse 2s infinite; }
+
+        /* Custom Specific Styles */
+        .day-toggle { display: flex; gap: var(--spacing-sm); background: rgba(0,0,0,0.2); padding: 4px; border-radius: var(--border-radius-md); margin-bottom: var(--spacing-md); }
+        .day-toggle button { flex: 1; padding: 10px; border: none; border-radius: var(--border-radius-sm); scale: 0.95; cursor: pointer; background: transparent; color: var(--text-secondary); transition: all 0.2s; }
+        .day-toggle button.active { background: var(--accent-primary); color: #000; scale: 1; font-weight: bold; }
+        
+        .trip-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: var(--spacing-md); border-radius: var(--border-radius-md);
+            border: 1px solid var(--border-color); background: rgba(255,255,255,0.03);
+            text-align: left; cursor: pointer; transition: all 0.2s; width: 100%;
+        }
+        .trip-item.selected { border-color: var(--accent-primary); background: var(--accent-glow); }
+
+        .time-display { font-size: 3.5rem; font-weight: 700; font-family: monospace; color: white; margin: 20px 0; }
+        .time-display.arrived { color: var(--success-color); }
+
+        .status-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; margin-bottom: 12px;
+        }
+    </style>
 </head>
-
 <body>
-  <div id="root"></div>
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW registration failed:', err));
-      });
-    }
-  </script>
-</body>
+    <div id="app">
+        <!-- Persistent Header (hidden on Home) -->
+        <header id="main-header" class="app-header hidden">
+            <div class="header-title" onclick="router.navigate('home')">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>
+                TimelyBus
+            </div>
+        </header>
 
+        <main id="root"></main>
+    </div>
+
+    <script>
+        // --- DATA (Realistic Tokushima-Naruto Line) ---
+        const STOPS = [
+            { id: 'tokushima-st', name: '徳島駅前' },
+            { id: 'tokushima-univ', name: '徳島大学前' },
+            { id: 'hiroshima', name: '広島' },
+            { id: 'rohmon', name: '老門' },
+            { id: 'naruto-st', name: '鳴門駅前' },
+            { id: 'naruto-park', name: '鳴門公園' }
+        ];
+
+        // 平日ダイヤ
+        const WEEKDAY_TRIPS = [
+            { id: 'w0715', stopTimes: { 'tokushima-st': '07:15', 'tokushima-univ': '07:22', 'hiroshima': '07:45', 'naruto-st': '08:05', 'naruto-park': '08:31' } },
+            { id: 'w0830', stopTimes: { 'tokushima-st': '08:30', 'tokushima-univ': '08:37', 'hiroshima': '09:00', 'naruto-st': '09:20', 'naruto-park': '09:46' } },
+            { id: 'w1015', stopTimes: { 'tokushima-st': '10:15', 'tokushima-univ': '10:22', 'hiroshima': '10:45', 'naruto-st': '11:05', 'naruto-park': '11:31' } },
+            { id: 'w1200', stopTimes: { 'tokushima-st': '12:00', 'tokushima-univ': '12:07', 'hiroshima': '12:30', 'naruto-st': '12:50', 'naruto-park': '13:16' } },
+            { id: 'w1520', stopTimes: { 'tokushima-st': '15:20', 'tokushima-univ': '15:27', 'hiroshima': '15:50', 'naruto-st': '16:10', 'naruto-park': '16:36' } },
+            { id: 'w1710', stopTimes: { 'tokushima-st': '17:10', 'tokushima-univ': '17:18', 'hiroshima': '17:45', 'naruto-st': '18:05', 'naruto-park': '18:31' } },
+            { id: 'w1900', stopTimes: { 'tokushima-st': '19:00', 'tokushima-univ': '19:07', 'hiroshima': '19:30', 'naruto-st': '19:50' } },
+            { id: 'w2130', stopTimes: { 'tokushima-st': '21:30', 'tokushima-univ': '21:36', 'hiroshima': '21:55', 'naruto-st': '22:12' } },
+            { id: 'w2350', stopTimes: { 'tokushima-st': '23:50', 'tokushima-univ': '23:56', 'hiroshima': '00:15', 'naruto-st': '00:30' } }
+        ];
+
+        // 休日ダイヤ
+        const WEEKEND_TRIPS = [
+            { id: 'h0730', stopTimes: { 'tokushima-st': '07:30', 'tokushima-univ': '07:37', 'hiroshima': '08:00', 'naruto-st': '08:20', 'naruto-park': '08:46' } },
+            { id: 'h0930', stopTimes: { 'tokushima-st': '09:30', 'tokushima-univ': '09:37', 'hiroshima': '10:00', 'naruto-st': '10:20', 'naruto-park': '10:46' } },
+            { id: 'h1200', stopTimes: { 'tokushima-st': '12:00', 'tokushima-univ': '12:07', 'hiroshima': '12:30', 'naruto-st': '12:50', 'naruto-park': '13:16' } },
+            { id: 'h1430', stopTimes: { 'tokushima-st': '14:30', 'tokushima-univ': '14:37', 'hiroshima': '15:00', 'naruto-st': '15:20', 'naruto-park': '15:46' } },
+            { id: 'h1715', stopTimes: { 'tokushima-st': '17:15', 'tokushima-univ': '17:22', 'hiroshima': '17:45', 'naruto-st': '18:05', 'naruto-park': '18:31' } },
+            { id: 'h2000', stopTimes: { 'tokushima-st': '20:00', 'tokushima-univ': '20:06', 'hiroshima': '20:25', 'naruto-st': '20:42' } },
+            { id: 'h2355', stopTimes: { 'tokushima-st': '23:55', 'tokushima-univ': '00:01', 'hiroshima': '00:20', 'naruto-st': '00:35' } }
+        ];
+
+        const PDF_FILES = [
+            { name: 'a1_naruto_weekday.pdf', label: '鳴門線 平日' },
+            { name: 'a2_naruto_weekend.pdf', label: '鳴門線 休日' },
+            { name: 'b19_bypassnaruto.pdf', label: 'バイパス鳴門線' },
+            { name: 'b21_rohmonnaruto.pdf', label: '老門鳴門線' },
+        ];
+
+        // --- STATE ---
+        let state = {
+            currentPage: 'home',
+            depStopId: 'tokushima-st',
+            arrStopId: 'naruto-st',
+            dayType: (new Date().getDay() === 0 || new Date().getDay() === 6) ? 'weekend' : 'weekday',
+            boardingTime: '',
+            arrivalTime: '',
+            isTiming: false,
+            expectedArrivalMs: null,
+            intervalId: null
+        };
+
+        // --- CORE LOGIC ---
+        const getTrips = () => {
+            const now = new Date();
+            const currentTime = now.getHours() * 60 + now.getMinutes();
+            const all = state.dayType === 'weekday' ? WEEKDAY_TRIPS : WEEKEND_TRIPS;
+            
+            return all.filter(t => t.stopTimes[state.depStopId] && t.stopTimes[state.arrStopId])
+                .map(t => {
+                    const [h, m] = t.stopTimes[state.depStopId].split(':').map(Number);
+                    let minutes = h * 60 + m;
+                    const adjusted = minutes < currentTime ? minutes + 1440 : minutes;
+                    return { ...t, adjusted };
+                })
+                .sort((a, b) => a.adjusted - b.adjusted)
+                .slice(0, 5);
+        };
+
+        // --- UI RENDERERS ---
+        const render = () => {
+            const root = document.getElementById('root');
+            const header = document.getElementById('main-header');
+            header.classList.toggle('hidden', state.currentPage === 'home');
+            
+            root.innerHTML = '';
+            root.className = 'page-container animate-fade-in';
+
+            if (state.currentPage === 'home') renderHome(root);
+            else if (state.currentPage === 'receive') renderReceive(root);
+            else if (state.currentPage === 'pdf') renderPdf(root);
+        };
+
+        const renderHome = (root) => {
+            root.innerHTML = `
+                <div class="glass-card" style="text-align: center; margin-top: 40px;">
+                    <div style="width: 88px; height: 88px; border-radius: 20px; background: var(--accent-primary); color: #000; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;">
+                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>
+                    </div>
+                    <h1 style="font-size: 2.2rem; margin-bottom: 8px;">TimelyBus</h1>
+                    <p style="color: var(--text-secondary); margin-bottom: 40px;">徳島バス 時刻表・到着予測</p>
+                    <div style="display: grid; gap: 16px;">
+                        <button class="btn btn-primary" onclick="router.navigate('receive')">バスの到着を予測する</button>
+                        <button class="btn" style="background: transparent" onclick="router.navigate('pdf')">時刻表PDFを見る</button>
+                    </div>
+                </div>
+            `;
+        };
+
+        const renderReceive = (root) => {
+            if (state.isTiming) {
+                renderTimer(root);
+                return;
+            }
+
+            const trips = getTrips();
+            if (!state.boardingTime && trips.length > 0) {
+                state.boardingTime = trips[0].stopTimes[state.depStopId];
+                state.arrivalTime = trips[0].stopTimes[state.arrStopId];
+            }
+
+            root.innerHTML = `
+                <h2>運行ルート設定</h2>
+                
+                <div class="day-toggle">
+                    <button class="${state.dayType === 'weekday' ? 'active' : ''}" onclick="actions.setDay('weekday')">平日</button>
+                    <button class="${state.dayType === 'weekend' ? 'active' : ''}" onclick="actions.setDay('weekend')">土日祝</button>
+                </div>
+
+                <div class="glass-card">
+                    <div style="margin-bottom: 16px;">
+                        <label style="font-size: 0.8rem; color: var(--text-secondary)">出発地</label>
+                        <select class="input-field" onchange="actions.setDep(this.value)">
+                            ${STOPS.map(s => `<option value="${s.id}" ${s.id === state.depStopId ? 'selected' : ''}>${s.name}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div style="margin-bottom: 16px;">
+                        <label style="font-size: 0.8rem; color: var(--text-secondary)">到着地</label>
+                        <select class="input-field" onchange="actions.setArr(this.value)">
+                            ${STOPS.map(s => `<option value="${s.id}" ${s.id === state.arrStopId ? 'selected' : ''}>${s.name}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px;">
+                        <div>
+                            <label style="font-size: 0.8rem; color: var(--text-secondary)">乗車時刻</label>
+                            <input type="time" class="input-field" value="${state.boardingTime}" onchange="actions.updateBoarding(this.value)">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.8rem; color: var(--text-secondary)">到着予定</label>
+                            <input type="time" class="input-field" value="${state.arrivalTime}" onchange="state.arrivalTime = this.value">
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" style="margin-top: 24px;" onclick="actions.startTimer()">予測を開始する</button>
+                </div>
+
+                <div class="glass-card">
+                    <h3 style="font-size: 0.9rem; margin-bottom: 12px; color: var(--text-secondary)">直近の便を選択</h3>
+                    <div style="display: grid; gap: 8px;">
+                        ${trips.length ? trips.map(t => `
+                            <div class="trip-item ${t.stopTimes[state.depStopId] === state.boardingTime ? 'selected' : ''}" onclick="actions.selectTrip('${t.stopTimes[state.depStopId]}', '${t.stopTimes[state.arrStopId]}')">
+                                <span style="font-weight: bold">${t.stopTimes[state.depStopId]} 発</span>
+                                <span style="color: var(--text-secondary)">→ ${t.stopTimes[state.arrStopId]} 着</span>
+                            </div>
+                        `).join('') : '<p style="text-align:center; color: var(--text-secondary)">便がありません</p>'}
+                    </div>
+                </div>
+            `;
+        };
+
+        const renderTimer = (root) => {
+            root.innerHTML = `
+                <div class="glass-card" style="text-align: center; padding: 40px 20px;">
+                    <div id="timer-badge" class="status-badge" style="background: var(--accent-glow); color: var(--accent-primary);">
+                        <span style="width: 8px; height: 8px; border-radius: 50%; background: currentColor;" class="animate-pulse"></span>
+                        <span id="timer-status">バスの到着を待っています...</span>
+                    </div>
+                    <div style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 8px;">
+                        ${STOPS.find(s=>s.id===state.depStopId).name} → ${STOPS.find(s=>s.id===state.arrStopId).name}
+                    </div>
+                    <div id="countdown" class="time-display">--:--</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+                        <div>
+                            <div style="font-size: 0.8rem; color: var(--text-secondary)">出発</div>
+                            <div style="font-weight: bold">${state.boardingTime}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.8rem; color: var(--text-secondary)">予測</div>
+                            <div style="font-weight: bold">${state.arrivalTime}</div>
+                        </div>
+                    </div>
+                    <button class="btn" style="margin-top: 32px; background: transparent;" onclick="actions.stopTimer()">設定に戻る</button>
+                </div>
+            `;
+            updateCountdownUI();
+        };
+
+        const renderPdf = (root) => {
+            root.innerHTML = `
+                <h2>時刻表PDF</h2>
+                <p style="color: var(--text-secondary); font-size: 0.9rem">タップすると新しいタブでPDFを開きます。</p>
+                <div style="display: grid; gap: 12px; margin-top: 8px;">
+                    ${PDF_FILES.map(pdf => `
+                        <div class="glass-card" style="display: flex; flex-direction: column; gap: 16px;">
+                            <div style="font-weight: 600; font-size: 1.1rem">${pdf.label}</div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                                <a href="./pdf/${pdf.name}" target="_blank" class="btn btn-primary" style="padding: 8px;">表示</a>
+                                <a href="./pdf/${pdf.name}" download class="btn" style="padding: 8px;">保存</a>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        };
+
+        // --- ACTIONS ---
+        const router = {
+            navigate: (page) => {
+                state.currentPage = page;
+                if (page !== 'receive') actions.stopTimer();
+                render();
+            }
+        };
+
+        const actions = {
+            setDay: (d) => { state.dayType = d; state.boardingTime = ''; render(); },
+            setDep: (id) => { state.depStopId = id; state.boardingTime = ''; render(); },
+            setArr: (id) => { state.arrStopId = id; state.boardingTime = ''; render(); },
+            selectTrip: (b, a) => { state.boardingTime = b; state.arrivalTime = a; render(); },
+            updateBoarding: (val) => {
+                if (state.boardingTime && state.arrivalTime) {
+                    const toMin = (s) => s.split(':').map(Number).reduce((h, m) => h * 60 + m);
+                    const diff = toMin(state.arrivalTime) - toMin(state.boardingTime);
+                    let newArr = toMin(val) + diff;
+                    if (newArr < 0) newArr += 1440;
+                    newArr %= 1440;
+                    const h = Math.floor(newArr / 60).toString().padStart(2, '0');
+                    const m = (newArr % 60).toString().padStart(2, '0');
+                    state.arrivalTime = `${h}:${m}`;
+                }
+                state.boardingTime = val;
+                render();
+            },
+            startTimer: () => {
+                if (!state.arrivalTime) return;
+                const [h, m] = state.arrivalTime.split(':').map(Number);
+                const now = new Date();
+                let arrive = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0);
+                const nowTotal = now.getHours() * 60 + now.getMinutes();
+                if (h * 60 + m < nowTotal - 120) arrive.setDate(arrive.getDate() + 1);
+                
+                state.expectedArrivalMs = arrive.getTime();
+                state.isTiming = true;
+                render();
+                state.intervalId = setInterval(updateCountdownUI, 1000);
+            },
+            stopTimer: () => {
+                state.isTiming = false;
+                if (state.intervalId) clearInterval(state.intervalId);
+                render();
+            }
+        };
+
+        const updateCountdownUI = () => {
+            const el = document.getElementById('countdown');
+            const statusEl = document.getElementById('timer-status');
+            const badge = document.getElementById('timer-badge');
+            if (!el) return;
+
+            const diff = state.expectedArrivalMs - Date.now();
+            if (diff <= 0) {
+                el.innerText = '00:00';
+                el.classList.add('arrived');
+                statusEl.innerText = '到着予定時刻を過ぎました';
+                badge.style.background = 'var(--success-glow)';
+                badge.style.color = 'var(--success-color)';
+                return;
+            }
+
+            const h = Math.floor(diff / 3600000);
+            const m = Math.floor((diff % 3600000) / 60000);
+            const s = Math.floor((diff % 60000) / 1000);
+            el.innerText = `${h > 0 ? h + ':' : ''}${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        };
+
+        // Initialize
+        render();
+    </script>
+</body>
 </html>
