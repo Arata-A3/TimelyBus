@@ -669,9 +669,9 @@
                     <h1 style="font-size: 2.2rem; margin-bottom: 8px;">TimelyBus</h1>
                     <p class="muted" style="margin-bottom: 32px;">徳島バス 時刻表・カウントダウン</p>
                     <div style="display: grid; gap: 12px;">
+                        <button class="btn btn-primary" onclick="router.navigate('countdown')">バスを調べる・カウントダウン</button>
                         ${last ? `<button class="btn" onclick="router.navigate('view', '${last.name}')">前回の時刻表を開く（${esc(last.label)}）</button>` : ''}
                         <button class="btn" onclick="router.navigate('pdf')">時刻表PDFを見る</button>
-                        <button class="btn btn-primary" onclick="router.navigate('countdown')">バスを調べる・カウントダウン</button>
                     </div>
                 </div>
                 <p class="small" style="text-align: center; color: var(--text-secondary); opacity: 0.6;">v${APP_VERSION}</p>
