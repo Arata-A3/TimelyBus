@@ -1,0 +1,19 @@
+{
+    "name": "TimelyBus 徳島バス時刻表",
+    "short_name": "TimelyBus",
+    "description": "徳島バス 時刻表PDFの閲覧と次のバスまでのカウントダウン",
+    "lang": "ja",
+    "start_url": "./",
+    "scope": "./",
+    "display": "standalone",
+    "background_color": "#0d1117",
+    "theme_color": "#0d1117",
+    "icons": [
+        {
+            "src": "icon.png",
+            "sizes": "640x640",
+            "type": "image/png",
+            "purpose": "any"
+        }
+    ]
+}

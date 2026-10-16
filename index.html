@@ -6,6 +6,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#0d1117">
+    <link rel="manifest" href="./manifest.webmanifest">
     <link rel="apple-touch-icon" href="./icon.png">
     <link rel="icon" href="./icon.png">
     <title>TimelyBus - 徳島バス時刻データ</title>
@@ -221,6 +222,17 @@
         .search-row label { display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 4px; }
         .search-row .input-field { padding: 8px 12px; height: 44px; }
         .result-head .q { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px; }
+        .tt-row { display: grid; grid-template-columns: 36px 1fr; border-top: 1px solid var(--border-color); }
+        .tt-row:first-child { border-top: none; }
+        .tt-row.current .tt-h { color: var(--accent-primary); }
+        .tt-h { font-weight: 700; font-size: 1.1rem; text-align: center; padding: 8px 0; font-variant-numeric: tabular-nums; }
+        .tt-mins { display: flex; flex-wrap: wrap; gap: 4px 6px; padding: 6px 0; }
+        .tt-m { min-width: 64px; padding: 3px 6px; border-radius: 6px; border: 1px solid transparent; line-height: 1.25; font-variant-numeric: tabular-nums; }
+        .tt-m b { font-size: 1.15rem; }
+        .tt-m small { display: block; font-size: 0.7rem; color: var(--text-secondary); }
+        .tt-m.next { border-color: var(--accent-primary); background: rgba(88,166,255,0.12); }
+        .tt-m.past { opacity: 0.4; }
+        .tt-mark { font-size: 0.7rem; color: var(--text-secondary); margin-right: 1px; vertical-align: 3px; }
         .day-sep { font-size: 0.75rem; color: var(--text-secondary); padding: 6px 2px 0; }
 
         .progress { height: 8px; border-radius: 4px; background: rgba(255,255,255,0.08); overflow: hidden; margin: 16px 0 4px; }
@@ -292,6 +304,8 @@
         };
 
         // "行先番号|経由記号|各停留所の時刻（STOPS順、空欄は停車しない）"
+        // この部分は tools/extract-timetable.js で自動生成（手で編集しない）
+        // @@TIMETABLE_START
         const RAW_TIMETABLE = {
             weekday: {
               down: [
@@ -455,8 +469,9 @@
               ],
             }
         };
+        // @@TIMETABLE_END
 
-        const APP_VERSION = '1.1.0';
+        const APP_VERSION = '1.2.0';
 
         const PDF_FILES = [
             { name: 'a1_naruto_weekday.pdf', label: '鳴門線 平日' },
@@ -544,7 +559,7 @@
             from: clamp(savedRoute.from | 0, 0, STOPS.length - 1),
             to: clamp(savedRoute.to | 0, 0, STOPS.length - 1),
             dayOverride: null,           // null = 自動判定（今日／検索する日のみ適用）
-            mode: ['now', 'depart', 'arrive'].includes(store.get('mode', 'now')) ? store.get('mode', 'now') : 'now',
+            mode: ['now', 'depart', 'arrive', 'table'].includes(store.get('mode', 'now')) ? store.get('mode', 'now') : 'now',
             searchDay: 0,                // 0 = 今日, 1 = 明日
             searchTime: { depart: '', arrive: '' },
             riding: store.get('riding', null),
@@ -681,7 +696,7 @@
         const renderCountdown = (root) => {
             const options = (selected) => STOPS.map((s, i) => `<option value="${i}" ${i === selected ? 'selected' : ''}>${esc(s)}</option>`).join('');
             const mode = state.dayOverride || 'auto';
-            const searching = state.mode !== 'now';
+            const searching = state.mode === 'depart' || state.mode === 'arrive';
             if (searching && !state.searchTime[state.mode]) state.searchTime[state.mode] = nowPlus(state.mode === 'arrive' ? 60 : 0);
             const baseDate = new Date();
             if (searching) baseDate.setDate(baseDate.getDate() + state.searchDay);
@@ -692,6 +707,7 @@
                     <button class="${state.mode === 'now' ? 'active' : ''}" onclick="actions.setMode('now')">今すぐ</button>
                     <button class="${state.mode === 'depart' ? 'active' : ''}" onclick="actions.setMode('depart')">出発時刻で</button>
                     <button class="${state.mode === 'arrive' ? 'active' : ''}" onclick="actions.setMode('arrive')">到着時刻で</button>
+                    <button class="${state.mode === 'table' ? 'active' : ''}" onclick="actions.setMode('table')">時刻表</button>
                 </div>
                 <div class="glass-card" style="padding: 18px;">
                     <div class="stop-picker">
@@ -823,6 +839,59 @@
             `;
         };
 
+        // 乗車停留所の時刻表（降車停留所まで行く便だけ）を、時ごとの行で表示する
+        const renderTimetable = (container, now) => {
+            if (state.from === state.to) {
+                container.innerHTML = `<div class="glass-card muted" style="text-align:center">乗車と降車に別の停留所を選んでください。</div>`;
+                return;
+            }
+            const dayType = state.dayOverride || autoDayType(now);
+            const isToday = dayType === autoDayType(now);
+            const dir = state.from < state.to ? 'down' : 'up';
+            const trips = TIMETABLE[dayType][dir]
+                .filter(t => t.times[state.from] != null && t.times[state.to] != null)
+                .map(t => ({ ...t, dep: t.times[state.from], arr: t.times[state.to] }))
+                .sort((a, b) => a.dep - b.dep);
+            if (!trips.length) {
+                container.innerHTML = `<div class="glass-card muted" style="text-align:center">この区間を直通する便が見つかりません。</div>`;
+                return;
+            }
+            const nowMin = now.getHours() * 60 + now.getMinutes();
+            const next = isToday ? trips.find(t => t.dep >= nowMin) : null;
+            const hours = [];
+            for (const t of trips) {
+                const h = Math.floor(t.dep / 60);
+                if (!hours.length || hours[hours.length - 1].h !== h) hours.push({ h, trips: [] });
+                hours[hours.length - 1].trips.push(t);
+            }
+            const usedMarks = [...new Set(trips.map(t => t.mark))].sort();
+            container.innerHTML = `
+                <div class="glass-card" style="padding: 14px 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin: 0 4px 10px;">
+                        <div style="font-weight: 700;">${esc(STOPS[state.from])} 発</div>
+                        <div class="small muted">${esc(STOPS[state.to])} 行き ・ ${DAY_LABEL[dayType]}ダイヤ</div>
+                    </div>
+                    <div class="tt">
+                        ${hours.map(({ h, trips: hs }) => `
+                            <div class="tt-row ${next && Math.floor(next.dep / 60) === h ? 'current' : ''}">
+                                <div class="tt-h">${h}</div>
+                                <div class="tt-mins">
+                                    ${hs.map(t => `
+                                        <div class="tt-m ${t === next ? 'next' : ''} ${isToday && t.dep < nowMin ? 'past' : ''}">
+                                            <b>${t.mark ? `<span class="tt-mark">${t.mark}</span>` : ''}${String(t.dep % 60).padStart(2, '0')}</b>
+                                            <small>→${fmtHM(t.arr)}</small>
+                                        </div>`).join('')}
+                                </div>
+                            </div>`).join('')}
+                    </div>
+                    <div class="small muted" style="margin: 12px 4px 0; line-height: 1.7;">
+                        「→」は${esc(STOPS[state.to])}の到着時刻。${next ? '青枠は次の便。' : ''}<br>
+                        ${usedMarks.map(m => `${m ? m : '無印'}：${esc(MARKS[m])}`).join('<br>')}
+                    </div>
+                </div>
+            `;
+        };
+
         const renderRiding = (container, now) => {
             const r = state.riding;
             container.innerHTML = `
@@ -880,6 +949,22 @@
                 return;
             }
 
+            if (state.mode === 'table') {
+                // 次の便のハイライトが動いたときだけ描き直す
+                const next = getUpcoming(state.from, state.to, now, 1)[0];
+                const signature = `table-${state.from}-${state.to}-${state.dayOverride}-${now.toDateString()}-${next ? next.id : ''}`;
+                if (signature !== state.lastSignature) {
+                    const first = !state.lastSignature.startsWith('table-');
+                    renderTimetable(container, now);
+                    state.lastSignature = signature;
+                    if (first) {
+                        const row = container.querySelector('.tt-row.current');
+                        if (row) row.scrollIntoView({ block: 'center' });
+                    }
+                }
+                return;
+            }
+
             if (state.mode === 'now') {
                 const trips = getUpcoming(state.from, state.to, now, 6);
                 lastTrips = trips;
@@ -925,6 +1010,7 @@
             root.innerHTML = `
                 <h2>時刻表PDF</h2>
                 <p class="muted small">「表示」でアプリ内ビューアが開きます。拡大した倍率と位置は時刻表ごとに記憶され、次回はそのまま表示されます。</p>
+                <button class="btn" style="padding: 12px;" onclick="state.mode = 'table'; store.set('mode', 'table'); router.navigate('countdown')">鳴門線は停留所ごとの見やすい時刻表もあります →</button>
                 <div style="display: grid; gap: 12px;">
                     ${PDF_FILES.map(pdf => `
                         <div class="glass-card pdf-card" ${pdf.name === last ? 'style="border-color: var(--accent-primary)"' : ''}>
@@ -996,7 +1082,8 @@
         const renderPdfPages = async (name, onProgress) => {
             if (pageCache[name]) return pageCache[name];
             const pdfjs = await loadPdfJs();
-            const doc = await pdfjs.getDocument('./pdf/' + name).promise;
+            // 分割読み込みはオフライン保存（Service Worker）と相性が悪いので、ファイルを丸ごと読む
+            const doc = await pdfjs.getDocument({ url: './pdf/' + name, disableRange: true, disableStream: true }).promise;
             const pages = [];
             for (let i = 1; i <= doc.numPages; i++) {
                 onProgress(i, doc.numPages);
@@ -1309,6 +1396,11 @@
 
         // Initialize
         render();
+
+        // オフライン対応（PDFとビューアを端末に保存する）。file:// で開いたときは使えないので登録しない
+        if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+            navigator.serviceWorker.register('./sw.js?v=' + APP_VERSION).catch(err => console.warn('Service Worker 登録失敗', err));
+        }
     </script>
 </body>
 </html>
