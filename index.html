@@ -9,10 +9,11 @@
     <link rel="manifest" href="./manifest.webmanifest">
     <link rel="apple-touch-icon" href="./icon.png">
     <link rel="icon" href="./icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&display=swap" rel="stylesheet">
     <title>TimelyBus - 徳島バス時刻データ</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
         :root {
             --bg-color: #0d1117;
             --surface-color: rgba(22, 27, 34, 0.7);
@@ -40,7 +41,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-family: 'Kosugi Maru', 'Hiragino Maru Gothic ProN', 'Hiragino Sans', 'Meiryo', system-ui, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-primary);
             line-height: 1.5;
@@ -188,7 +189,7 @@
 
         .next-card { text-align: center; padding: 28px 20px; }
         .next-card .label { font-size: 0.85rem; color: var(--text-secondary); }
-        .time-display { font-size: 4rem; line-height: 1.1; font-weight: 700; font-family: ui-monospace, Menlo, Consolas, monospace; color: white; margin: 8px 0 12px; font-variant-numeric: tabular-nums; }
+        .time-display { font-size: 4rem; line-height: 1.1; font-weight: 700; color: white; margin: 8px 0 12px; font-variant-numeric: tabular-nums; }
         .time-display.long { font-size: 2.6rem; }
         .time-display.soon { color: var(--warn-color); }
         .time-display.now { color: var(--danger-color); }
@@ -231,7 +232,8 @@
         .tt-m b { font-size: 1.15rem; }
         .tt-m small { display: block; font-size: 0.7rem; color: var(--text-secondary); }
         .tt-m.next { border-color: var(--accent-primary); background: rgba(88,166,255,0.12); }
-        .tt-m.past { opacity: 0.4; }
+        .tt-m.past { opacity: 0.6; }
+        .tt-m.past b { font-weight: 400; }
         .tt-mark { font-size: 0.7rem; color: var(--text-secondary); margin-right: 1px; vertical-align: 3px; }
         .day-sep { font-size: 0.75rem; color: var(--text-secondary); padding: 6px 2px 0; }
 
@@ -471,7 +473,7 @@
         };
         // @@TIMETABLE_END
 
-        const APP_VERSION = '1.2.0';
+        const APP_VERSION = '1.3.0';
 
         const PDF_FILES = [
             { name: 'a1_naruto_weekday.pdf', label: '鳴門線 平日' },
@@ -885,7 +887,7 @@
                             </div>`).join('')}
                     </div>
                     <div class="small muted" style="margin: 12px 4px 0; line-height: 1.7;">
-                        「→」は${esc(STOPS[state.to])}の到着時刻。${next ? '青枠は次の便。' : ''}<br>
+                        「→」は${esc(STOPS[state.to])}の到着時刻。${next ? '青枠は次の便。' : ''}${isToday ? '薄い字は今日もう出発した便。' : ''}<br>
                         ${usedMarks.map(m => `${m ? m : '無印'}：${esc(MARKS[m])}`).join('<br>')}
                     </div>
                 </div>
