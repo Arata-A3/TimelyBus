@@ -2,10 +2,14 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#0d1117">
+    <link rel="apple-touch-icon" href="./icon.png">
+    <link rel="icon" href="./icon.png">
     <title>TimelyBus - 徳島バス時刻データ</title>
     <style>
-        /* CSS from index.css */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
         :root {
@@ -18,6 +22,9 @@
             --accent-glow: rgba(88, 166, 255, 0.4);
             --success-color: #2ea043;
             --success-glow: rgba(46, 160, 67, 0.4);
+            --warn-color: #f0883e;
+            --warn-glow: rgba(240, 136, 62, 0.35);
+            --danger-color: #ff7b72;
             --border-color: rgba(240, 246, 252, 0.1);
             --border-radius-lg: 16px;
             --border-radius-md: 12px;
@@ -76,6 +83,7 @@
             cursor: pointer;
             font-size: 1rem;
             font-weight: 500;
+            font-family: inherit;
             text-decoration: none;
             transition: all 0.2s ease;
             backdrop-filter: blur(4px);
@@ -105,6 +113,7 @@
             border-radius: var(--border-radius-md);
             color: var(--text-primary);
             font-size: 1rem;
+            font-family: inherit;
             transition: border-color 0.2s;
         }
 
@@ -135,10 +144,10 @@
         }
 
         .page-container {
-            padding: var(--spacing-lg);
+            padding: var(--spacing-lg) var(--spacing-md);
             display: flex;
             flex-direction: column;
-            gap: var(--spacing-lg);
+            gap: var(--spacing-md);
             flex: 1;
         }
 
@@ -159,25 +168,94 @@
 
         .animate-pulse { animation: pulse 2s infinite; }
 
-        /* Custom Specific Styles */
-        .day-toggle { display: flex; gap: var(--spacing-sm); background: rgba(0,0,0,0.2); padding: 4px; border-radius: var(--border-radius-md); margin-bottom: var(--spacing-md); }
-        .day-toggle button { flex: 1; padding: 10px; border: none; border-radius: var(--border-radius-sm); scale: 0.95; cursor: pointer; background: transparent; color: var(--text-secondary); transition: all 0.2s; }
-        .day-toggle button.active { background: var(--accent-primary); color: #000; scale: 1; font-weight: bold; }
-        
-        .trip-item {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: var(--spacing-md); border-radius: var(--border-radius-md);
-            border: 1px solid var(--border-color); background: rgba(255,255,255,0.03);
-            text-align: left; cursor: pointer; transition: all 0.2s; width: 100%;
-        }
-        .trip-item.selected { border-color: var(--accent-primary); background: var(--accent-glow); }
+        .muted { color: var(--text-secondary); }
+        .small { font-size: 0.8rem; }
 
-        .time-display { font-size: 3.5rem; font-weight: 700; font-family: monospace; color: white; margin: 20px 0; }
+        /* --- Countdown --- */
+        .seg { display: flex; gap: 4px; background: rgba(0,0,0,0.25); padding: 4px; border-radius: var(--border-radius-md); }
+        .seg button { flex: 1; padding: 8px 4px; border: none; border-radius: var(--border-radius-sm); cursor: pointer; background: transparent; color: var(--text-secondary); font: inherit; font-size: 0.85rem; }
+        .seg button.active { background: var(--accent-primary); color: #000; font-weight: 700; }
+
+        .stop-picker { display: grid; grid-template-columns: 1fr auto; gap: 8px 10px; align-items: end; }
+        .stop-picker label { display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 4px; }
+        .swap-btn {
+            grid-row: 1 / span 2; grid-column: 2; align-self: center;
+            width: 48px; height: 48px; border-radius: 50%;
+            border: 1px solid var(--border-color); background: rgba(255,255,255,0.05);
+            color: var(--accent-primary); font-size: 1.4rem; cursor: pointer;
+        }
+
+        .next-card { text-align: center; padding: 28px 20px; }
+        .next-card .label { font-size: 0.85rem; color: var(--text-secondary); }
+        .time-display { font-size: 4rem; line-height: 1.1; font-weight: 700; font-family: ui-monospace, Menlo, Consolas, monospace; color: white; margin: 8px 0 12px; font-variant-numeric: tabular-nums; }
+        .time-display.long { font-size: 2.6rem; }
+        .time-display.soon { color: var(--warn-color); }
+        .time-display.now { color: var(--danger-color); }
         .time-display.arrived { color: var(--success-color); }
+        .trip-route { display: flex; justify-content: center; align-items: baseline; gap: 10px; font-size: 1.3rem; font-weight: 700; }
+        .trip-route .arrow { color: var(--text-secondary); font-size: 1rem; }
+        .trip-meta { margin-top: 6px; font-size: 0.8rem; color: var(--text-secondary); }
 
         .status-badge {
             display: inline-flex; align-items: center; gap: 8px;
             padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; margin-bottom: 12px;
+            background: var(--accent-glow); color: var(--accent-primary);
+        }
+        .status-badge .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+
+        .trip-list { display: grid; gap: 8px; }
+        .trip-item {
+            display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: center;
+            padding: 12px 14px; border-radius: var(--border-radius-md);
+            border: 1px solid var(--border-color); background: rgba(255,255,255,0.03);
+        }
+        .trip-item .t { font-weight: 700; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+        .trip-item .t .arr { font-weight: 400; color: var(--text-secondary); font-size: 0.9rem; }
+        .trip-item .remain { font-weight: 700; color: var(--accent-primary); text-align: right; font-variant-numeric: tabular-nums; }
+        .trip-item .sub { font-size: 0.75rem; color: var(--text-secondary); }
+        .trip-item .ride { font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color); background: transparent; color: var(--text-primary); cursor: pointer; font-family: inherit; justify-self: end; }
+        .trip-item.best { border-color: var(--accent-primary); background: rgba(88,166,255,0.12); }
+        .trip-item.past { opacity: 0.55; }
+        .tag { display: inline-block; font-size: 0.7rem; font-weight: 700; padding: 1px 8px; border-radius: 10px; background: var(--accent-primary); color: #000; margin-left: 6px; vertical-align: 2px; }
+        .search-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; align-items: end; }
+        .search-row label { display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 4px; }
+        .search-row .input-field { padding: 8px 12px; height: 44px; }
+        .result-head .q { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px; }
+        .day-sep { font-size: 0.75rem; color: var(--text-secondary); padding: 6px 2px 0; }
+
+        .progress { height: 8px; border-radius: 4px; background: rgba(255,255,255,0.08); overflow: hidden; margin: 16px 0 4px; }
+        .progress > div { height: 100%; background: var(--accent-primary); transition: width 1s linear; }
+
+        /* --- PDF list --- */
+        .pdf-card { display: flex; flex-direction: column; gap: 12px; padding: 18px; }
+        .pdf-actions { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; }
+        .pdf-actions .btn { padding: 12px 8px; }
+
+        /* --- PDF viewer (full screen) --- */
+        .viewer { position: fixed; inset: 0; z-index: 50; background: #1b1f24; display: flex; flex-direction: column; }
+        .viewer-bar {
+            display: flex; align-items: center; gap: 6px;
+            padding: 8px; padding-top: max(8px, env(safe-area-inset-top));
+            background: rgba(13,17,23,0.95); border-bottom: 1px solid var(--border-color);
+        }
+        .viewer-title { flex: 1; min-width: 0; font-weight: 600; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .icon-btn {
+            min-width: 44px; height: 40px; padding: 0 10px; border-radius: var(--border-radius-sm);
+            border: 1px solid var(--border-color); background: rgba(255,255,255,0.06);
+            color: var(--text-primary); font: inherit; font-size: 1.05rem; cursor: pointer;
+        }
+        .icon-btn.zoom-label { font-size: 0.85rem; min-width: 60px; font-variant-numeric: tabular-nums; }
+        .viewer-scroll {
+            flex: 1; overflow: auto; -webkit-overflow-scrolling: touch;
+            touch-action: pan-x pan-y; overscroll-behavior: contain;
+        }
+        .viewer-pages { width: 100%; }
+        .viewer-pages img { display: block; width: 100%; height: auto; background: #fff; margin-bottom: 8px; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+        .viewer-msg { padding: 40px 20px; text-align: center; color: var(--text-secondary); }
+        .viewer-hint {
+            position: absolute; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%);
+            background: rgba(0,0,0,0.75); color: #fff; font-size: 0.8rem; padding: 8px 14px; border-radius: 20px;
+            pointer-events: none; transition: opacity 0.6s; white-space: nowrap;
         }
     </style>
 </head>
@@ -195,205 +273,662 @@
     </div>
 
     <script>
-        // --- DATA (Realistic Tokushima-Naruto Line) ---
+        // --- DATA ---
+        // 徳島バス 鳴門線 主要停留所時刻表（令和8年4月1日改正 / pdf/a1・a2 から抽出）
+        // 停留所は下り（徳島駅前→鳴門公園）の順。上り便も同じ並びに揃えてある。
         const STOPS = [
-            { id: 'tokushima-st', name: '徳島駅前' },
-            { id: 'tokushima-univ', name: '徳島大学前' },
-            { id: 'hiroshima', name: '広島' },
-            { id: 'rohmon', name: '老門' },
-            { id: 'naruto-st', name: '鳴門駅前' },
-            { id: 'naruto-park', name: '鳴門公園' }
+            '徳島駅前', '四国大学前', '広島', '松茂（とくとくターミナル）', '免許センター前',
+            '徳島空港', '道の駅くるくるなると', '木津', '鳴門郵便局前', '鳴門駅前',
+            '高速鳴門', 'ボートレース鳴門', '鳴門教育大学前', 'ウチノ海総合公園', '鳴門公園'
         ];
 
-        // 平日ダイヤ
-        const WEEKDAY_TRIPS = [
-            { id: 'w0715', stopTimes: { 'tokushima-st': '07:15', 'tokushima-univ': '07:22', 'hiroshima': '07:45', 'naruto-st': '08:05', 'naruto-park': '08:31' } },
-            { id: 'w0830', stopTimes: { 'tokushima-st': '08:30', 'tokushima-univ': '08:37', 'hiroshima': '09:00', 'naruto-st': '09:20', 'naruto-park': '09:46' } },
-            { id: 'w1015', stopTimes: { 'tokushima-st': '10:15', 'tokushima-univ': '10:22', 'hiroshima': '10:45', 'naruto-st': '11:05', 'naruto-park': '11:31' } },
-            { id: 'w1200', stopTimes: { 'tokushima-st': '12:00', 'tokushima-univ': '12:07', 'hiroshima': '12:30', 'naruto-st': '12:50', 'naruto-park': '13:16' } },
-            { id: 'w1520', stopTimes: { 'tokushima-st': '15:20', 'tokushima-univ': '15:27', 'hiroshima': '15:50', 'naruto-st': '16:10', 'naruto-park': '16:36' } },
-            { id: 'w1710', stopTimes: { 'tokushima-st': '17:10', 'tokushima-univ': '17:18', 'hiroshima': '17:45', 'naruto-st': '18:05', 'naruto-park': '18:31' } },
-            { id: 'w1900', stopTimes: { 'tokushima-st': '19:00', 'tokushima-univ': '19:07', 'hiroshima': '19:30', 'naruto-st': '19:50' } },
-            { id: 'w2130', stopTimes: { 'tokushima-st': '21:30', 'tokushima-univ': '21:36', 'hiroshima': '21:55', 'naruto-st': '22:12' } },
-            { id: 'w2350', stopTimes: { 'tokushima-st': '23:50', 'tokushima-univ': '23:56', 'hiroshima': '00:15', 'naruto-st': '00:30' } }
-        ];
+        const MARKS = {
+            '※': '広島ランプまで国道11号バイパス経由',
+            '◎': '免許センター前経由',
+            '◆': 'バイパス・松茂・免許センター前・空港経由',
+            '□': '免許センター前・空港経由',
+            '●': 'バイパス・松茂・中喜来経由',
+            '': '四国大学前・老門経由'
+        };
 
-        // 休日ダイヤ
-        const WEEKEND_TRIPS = [
-            { id: 'h0730', stopTimes: { 'tokushima-st': '07:30', 'tokushima-univ': '07:37', 'hiroshima': '08:00', 'naruto-st': '08:20', 'naruto-park': '08:46' } },
-            { id: 'h0930', stopTimes: { 'tokushima-st': '09:30', 'tokushima-univ': '09:37', 'hiroshima': '10:00', 'naruto-st': '10:20', 'naruto-park': '10:46' } },
-            { id: 'h1200', stopTimes: { 'tokushima-st': '12:00', 'tokushima-univ': '12:07', 'hiroshima': '12:30', 'naruto-st': '12:50', 'naruto-park': '13:16' } },
-            { id: 'h1430', stopTimes: { 'tokushima-st': '14:30', 'tokushima-univ': '14:37', 'hiroshima': '15:00', 'naruto-st': '15:20', 'naruto-park': '15:46' } },
-            { id: 'h1715', stopTimes: { 'tokushima-st': '17:15', 'tokushima-univ': '17:22', 'hiroshima': '17:45', 'naruto-st': '18:05', 'naruto-park': '18:31' } },
-            { id: 'h2000', stopTimes: { 'tokushima-st': '20:00', 'tokushima-univ': '20:06', 'hiroshima': '20:25', 'naruto-st': '20:42' } },
-            { id: 'h2355', stopTimes: { 'tokushima-st': '23:55', 'tokushima-univ': '00:01', 'hiroshima': '00:20', 'naruto-st': '00:35' } }
-        ];
+        // "行先番号|経由記号|各停留所の時刻（STOPS順、空欄は停車しない）"
+        const RAW_TIMETABLE = {
+            weekday: {
+              down: [
+                "21||6:25,6:40,6:50,,,,,,7:03,7:04,7:07,7:14,,,",
+                "15|※|6:55,,7:25,,,,,,7:45,7:46,7:49,,7:56,8:09,",
+                "23|◎|7:25,7:47,8:04,,8:10,,,,8:25,8:26,8:29,8:36,,,",
+                "15|※|7:30,,8:00,,,,,,8:20,8:21,8:24,,8:31,8:44,",
+                "23|◎|7:50,8:12,8:25,,8:30,,,,8:44,8:45,8:48,8:55,,,",
+                "15|※|8:00,,8:28,,,,,,8:43,8:44,8:47,,8:54,9:07,",
+                "18|◆|8:10,,,8:39,8:46,8:54,,,9:10,9:11,9:14,,,,9:43",
+                "23|◎|8:25,8:42,8:54,,8:59,,,,9:13,9:14,9:17,9:24,,,",
+                "17|※|9:00,,9:25,,,,,,9:40,9:41,9:44,,,,10:13",
+                "25|□|9:20,9:37,9:49,,9:54,10:02,,,10:18,10:19,10:22,,10:29,10:42,",
+                "18|◆|10:00,,,10:27,10:34,10:42,,,10:58,10:59,11:02,,,,11:31",
+                "23|◎|10:20,10:37,10:49,,10:54,,,,11:08,11:09,11:12,11:19,,,",
+                "21||10:50,11:07,11:19,,,,,,11:34,11:35,11:38,11:45,,,",
+                "18|◆|11:00,,,11:27,11:34,11:42,,,11:58,11:59,12:02,,,,12:31",
+                "25|□|11:20,11:37,11:49,,11:54,12:02,,,12:18,12:19,12:22,,12:29,12:42,",
+                "17|※|12:00,,12:25,,,,,,12:40,12:41,12:44,,,,13:13",
+                "23|◎|12:20,12:37,12:49,,12:54,,,,13:08,13:09,13:12,13:19,,,",
+                "18|◆|13:00,,,13:27,13:34,13:42,,,13:58,13:59,14:02,,,,14:31",
+                "25|□|13:20,13:37,13:49,,13:54,14:02,,,14:18,14:19,14:22,,14:29,14:42,",
+                "16|●|13:40,,,14:07,,,14:12,14:18,14:24,14:25,14:28,14:35,,,",
+                "18|◆|14:00,,,14:27,14:34,14:42,,,14:58,14:59,15:02,,,,15:31",
+                "25|□|14:20,14:37,14:49,,14:54,15:02,,,15:18,15:19,15:22,,15:29,15:42,",
+                "17|※|15:00,,15:25,,,,,,15:40,15:41,15:44,,,,16:13",
+                "25|□|15:20,15:37,15:49,,15:54,16:02,,,16:18,16:19,16:22,,16:29,16:42,",
+                "17|※|15:25,,15:50,,,,,,16:05,16:06,16:09,,,,16:38",
+                "16|●|15:40,,,16:07,,,16:12,16:18,16:24,16:25,16:28,16:35,,,",
+                "18|◆|16:00,,,16:27,16:34,16:42,,,16:58,16:59,17:02,,,,17:31",
+                "21||16:20,16:42,16:58,,,,,,17:14,17:15,17:18,17:25,,,",
+                "16|●|16:40,,,17:07,,,17:12,17:18,17:24,17:25,17:28,17:35,,,",
+                "15|※|17:00,,17:25,,,,,,17:41,17:42,17:45,,17:52,18:05,",
+                "21||17:20,17:45,18:01,,,,,,18:17,18:18,18:21,18:28,,,",
+                "16|●|17:40,,,18:14,,,18:19,18:25,18:31,18:32,18:35,18:42,,,",
+                "15|※|18:00,,18:28,,,,,,18:44,18:45,18:48,,18:55,19:08,",
+                "21||18:20,18:45,18:57,,,,,,19:12,19:13,19:16,19:23,,,",
+                "15|※|18:40,,19:05,,,,,,19:20,19:21,19:24,,19:31,,",
+                "21||19:00,19:17,19:29,,,,,,19:44,19:45,19:48,19:55,,,",
+                "15|※|19:30,,19:53,,,,,,20:06,20:07,20:10,,20:17,,",
+                "21||20:00,20:15,20:25,,,,,,20:38,20:39,20:42,20:49,,,",
+                "15|※|20:45,,21:08,,,,,,21:21,21:22,21:25,,21:32,,",
+                "21||21:30,21:45,21:55,,,,,,22:08,22:09,22:12,22:19,,,"
+              ],
+              up: [
+                "16|●|6:39,,,6:14,,,,6:05,6:00,5:56,5:53,5:52,,,",
+                "21||6:53,6:36,6:25,,,,,,6:10,6:06,6:03,6:02,,,",
+                "21||7:13,6:56,6:45,,,,,,6:30,6:26,6:23,6:22,,,",
+                "16|●|7:31,,,6:59,,,,6:50,6:45,6:41,6:38,6:37,,,",
+                "21||7:42,7:19,7:06,,,,,,6:50,6:46,6:43,6:42,,,",
+                "15|※|7:49,,7:18,,,,,,7:00,6:56,6:53,,6:46,6:38,",
+                "16|●|8:10,,,7:30,,,,7:20,7:15,7:11,7:08,7:07,,,",
+                "15|※|8:27,,7:48,,,,,,7:30,7:26,7:23,,7:16,7:08,",
+                "15|※|8:52,,8:13,,,,,,7:55,7:51,7:48,,7:41,7:33,",
+                "21||9:00,8:37,8:23,,,,,,8:05,8:01,7:58,7:57,,,",
+                "15|※|9:32,,9:02,,,,,,8:45,8:41,8:38,,8:31,8:23,",
+                "16|●|9:58,,,9:26,,,9:18,9:10,9:05,9:01,8:58,8:57,,,",
+                "15|※|10:17,,9:47,,,,,,9:30,9:26,9:23,,9:16,9:08,",
+                "21||10:28,10:05,9:52,,,,,,9:35,9:31,9:28,9:27,,,",
+                "15|※|10:47,,10:17,,,,,,10:00,9:56,9:53,,9:46,9:38,",
+                "21||11:13,10:50,10:37,,,,,,10:20,10:16,10:13,10:12,,,",
+                "18|◆|11:58,,,11:26,11:19,11:15,,,10:55,10:50,10:47,,,,10:25",
+                "25|□|12:26,12:03,11:50,,11:44,11:40,,,11:20,11:16,11:13,,11:06,10:58,",
+                "17|※|12:42,,12:12,,,,,,11:55,11:50,11:47,,,,11:25",
+                "23|◎|13:16,12:53,12:40,,12:35,,,,12:20,12:16,12:13,12:12,,,",
+                "16|●|13:38,,,13:06,,,12:58,12:50,12:45,12:41,12:38,12:37,,,",
+                "17|※|14:02,,13:32,,,,,,13:15,13:10,13:07,,,,12:45",
+                "25|□|14:26,14:03,13:50,,13:44,13:40,,,13:20,13:16,13:13,,13:06,12:58,",
+                "18|◆|14:58,,,14:26,14:19,14:15,,,13:55,13:50,13:47,,,,13:25",
+                "21||15:13,14:50,14:37,,,,,,14:20,14:16,14:13,14:12,,,",
+                "23|◎|15:56,15:33,15:20,,15:15,,,,15:00,14:56,14:53,14:52,,,",
+                "17|※|16:02,,15:32,,,,,,15:15,15:10,15:07,,,,14:45",
+                "25|□|16:26,16:03,15:50,,15:44,15:40,,,15:20,15:16,15:13,,15:06,14:58,",
+                "17|※|16:42,,16:12,,,,,,15:55,15:50,15:47,,,,15:25",
+                "18|◆|17:18,,,16:46,16:39,16:35,,,16:15,16:10,16:07,,,,15:45",
+                "25|□|17:50,17:20,17:05,,16:59,16:55,,,16:35,16:31,16:28,,16:21,16:13,",
+                "17|※|17:51,,17:12,,,,,,16:55,16:50,16:47,,,,16:25",
+                "15|※|18:22,,17:43,,,,,,17:25,17:21,17:18,,17:11,17:03,",
+                "18|◆|18:48,,,18:06,17:59,17:55,,,17:30,17:25,17:22,,,,17:00",
+                "21||18:56,18:23,18:08,,,,,,17:50,17:46,17:43,17:42,,,",
+                "18|◆|19:18,,,18:46,18:39,18:35,,,18:15,18:10,18:07,,,,17:45",
+                "15|※|19:27,,18:57,,,,,,18:40,18:36,18:33,,18:26,18:18,",
+                "21||19:49,19:33,19:20,,,,,,19:05,19:01,18:58,18:57,,,",
+                "16|●|20:23,,,19:58,,,,19:50,19:45,19:41,19:38,19:37,,,",
+                "25|□|20:45,20:29,20:18,,20:12,20:08,,,19:50,19:46,19:43,,19:36,19:28,",
+                "21||21:52,21:36,21:25,,,,,,21:10,21:06,21:03,21:02,,,"
+              ],
+            },
+            weekend: {
+              down: [
+                "21||7:00,7:15,7:24,,,,,,7:36,7:37,7:40,7:47,,,",
+                "15|※|7:30,,7:53,,,,,,8:06,8:07,8:10,,8:17,8:30,",
+                "23|◎|7:50,8:05,8:14,,8:19,,,,8:31,8:32,8:35,8:42,,,",
+                "18|◆|8:10,,,8:35,8:42,8:52,,,9:07,9:08,9:11,,,,9:40",
+                "25|□|8:30,8:45,8:54,,8:59,9:07,,,9:23,9:24,9:27,,9:34,9:47,",
+                "17|※|9:00,,9:25,,,,,,9:40,9:41,9:44,,,,10:13",
+                "25|□|9:20,9:37,9:49,,9:54,10:02,,,10:18,10:19,10:22,,10:29,10:42,",
+                "17|※|9:40,,10:05,,,,,,10:20,10:21,10:24,,,,10:53",
+                "18|◆|10:00,,,10:27,10:34,10:42,,,10:58,10:59,11:02,,,,11:31",
+                "23|◎|10:20,10:37,10:49,,10:54,,,,11:08,11:09,11:12,11:19,,,",
+                "18|◆|11:00,,,11:27,11:34,11:42,,,11:58,11:59,12:02,,,,12:31",
+                "25|□|11:20,11:37,11:49,,11:54,12:02,,,12:18,12:19,12:22,,12:29,12:42,",
+                "17|※|12:00,,12:25,,,,,,12:40,12:41,12:44,,,,13:13",
+                "23|◎|12:20,12:37,12:49,,12:54,,,,13:08,13:09,13:12,13:19,,,",
+                "18|◆|13:00,,,13:27,13:34,13:42,,,13:58,13:59,14:02,,,,14:31",
+                "25|□|13:20,13:37,13:49,,13:54,14:02,,,14:18,14:19,14:22,,14:29,14:42,",
+                "18|◆|14:00,,,14:27,14:34,14:42,,,14:58,14:59,15:02,,,,15:31",
+                "23|◎|14:20,14:37,14:49,,14:54,,,,15:08,15:09,15:12,15:19,,,",
+                "17|※|15:00,,15:25,,,,,,15:40,15:41,15:44,,,,16:13",
+                "23|◎|15:20,15:37,15:49,,15:54,,,,16:08,16:09,16:12,16:19,,,",
+                "17|※|15:25,,15:50,,,,,,16:05,16:06,16:09,,,,16:38",
+                "18|◆|16:00,,,16:27,16:34,16:42,,,16:58,16:59,17:02,,,,17:31",
+                "25|□|16:20,16:37,16:49,,16:54,17:02,,,17:18,17:19,17:22,,17:29,17:42,",
+                "18|◆|17:00,,,17:27,17:34,17:42,,,17:58,17:59,18:02,,,,18:31",
+                "21||17:30,17:47,17:59,,,,,,18:14,18:15,18:18,18:25,,,",
+                "16|●|18:00,,,18:27,,,18:32,18:38,18:44,18:45,18:48,18:55,,,",
+                "21||18:20,18:37,18:49,,,,,,19:04,19:05,19:08,19:15,,,",
+                "15|※|18:40,,19:05,,,,,,19:20,19:21,19:24,,19:31,,",
+                "21||19:00,19:17,19:29,,,,,,19:44,19:45,19:48,19:55,,,",
+                "16|●|19:30,,,19:55,,,19:59,20:05,20:11,20:12,20:15,20:22,,,",
+                "21||20:00,20:15,20:25,,,,,,20:38,20:39,20:42,20:49,,,",
+                "15|※|20:30,,20:53,,,,,,21:06,21:07,21:10,,21:17,,",
+                "21||21:00,21:15,21:25,,,,,,21:38,21:39,21:42,21:49,,,"
+              ],
+              up: [
+                "16||7:28,7:11,7:00,,,,,,6:45,6:41,6:38,6:37,,,",
+                "21|●|7:39,,,7:14,,,,7:05,7:00,6:56,6:53,6:52,,,",
+                "15|※|8:02,,7:40,,,,,,7:25,7:21,7:18,,7:11,7:03,",
+                "21||8:13,7:56,7:45,,,,,,7:30,7:26,7:23,7:22,,,",
+                "21||8:43,8:26,8:15,,,,,,8:00,7:56,7:53,7:52,,,",
+                "16|●|9:04,,,8:39,,,,8:30,8:25,8:21,8:18,8:17,,,",
+                "21||9:13,8:56,8:45,,,,,,8:30,8:26,8:23,8:22,,,",
+                "15|※|9:47,,9:17,,,,,,9:00,8:56,8:53,,8:46,8:38,",
+                "21||10:13,9:50,9:37,,,,,,9:20,9:16,9:13,9:12,,,",
+                "16|●|10:33,,,10:01,,,9:53,9:45,9:40,9:36,9:33,9:32,,,",
+                "17|※|11:02,,10:32,,,,,,10:15,10:10,10:07,,,,9:45",
+                "25|□|11:26,11:03,10:50,,10:44,10:40,,,10:20,10:16,10:13,,10:06,9:58,",
+                "18|◆|11:58,,,11:26,11:19,11:15,,,10:55,10:50,10:47,,,,10:25",
+                "25|□|12:26,12:03,11:50,,11:44,11:40,,,11:20,11:16,11:13,,11:06,10:58,",
+                "17|※|12:42,,12:12,,,,,,11:55,11:50,11:47,,,,11:25",
+                "23|◎|13:16,12:53,12:40,,12:35,,,,12:20,12:16,12:13,12:12,,,",
+                "16|●|13:38,,,13:06,,,12:58,12:50,12:45,12:41,12:38,12:37,,,",
+                "17|※|14:02,,13:32,,,,,,13:15,13:10,13:07,,,,12:45",
+                "25|□|14:26,14:03,13:50,,13:44,13:40,,,13:20,13:16,13:13,,13:06,12:58,",
+                "18|◆|14:58,,,14:26,14:19,14:15,,,13:55,13:50,13:47,,,,13:25",
+                "23|◎|15:16,14:53,14:40,,14:35,,,,14:20,14:16,14:13,14:12,,,",
+                "17|※|16:02,,15:32,,,,,,15:15,15:10,15:07,,,,14:45",
+                "25|□|16:26,16:03,15:50,,15:44,15:40,,,15:20,15:16,15:13,,15:06,14:58,",
+                "17|※|16:42,,16:12,,,,,,15:55,15:50,15:47,,,,15:25",
+                "23|◎|17:06,16:43,16:30,,16:25,,,,16:10,16:06,16:03,16:02,,,",
+                "18|◆|17:18,,,16:46,16:39,16:35,,,16:15,16:10,16:07,,,,15:45",
+                "17|※|17:51,,17:12,,,,,,16:55,16:50,16:47,,,,16:25",
+                "17|※|18:06,,17:32,,,,,,17:15,17:10,17:07,,,,16:45",
+                "23|◎|18:16,17:53,17:40,,17:35,,,,17:20,17:16,17:13,17:12,,,",
+                "18|◆|18:38,,,18:06,17:59,17:55,,,17:30,17:25,17:22,,,,17:00",
+                "18|◆|19:18,,,18:46,18:39,18:35,,,18:15,18:10,18:07,,,,17:45",
+                "25|□|19:26,19:03,18:50,,18:44,18:40,,,18:20,18:16,18:13,,18:06,17:58,",
+                "18|◆|20:11,,,19:46,19:39,19:35,,,19:15,19:10,19:07,,,,18:45",
+                "21||20:17,20:01,19:50,,,,,,19:35,19:31,19:28,19:27,,,",
+                "21||21:22,21:06,20:55,,,,,,20:40,20:36,20:33,20:32,,,"
+              ],
+            }
+        };
 
         const PDF_FILES = [
             { name: 'a1_naruto_weekday.pdf', label: '鳴門線 平日' },
-            { name: 'a2_naruto_weekend.pdf', label: '鳴門線 休日' },
+            { name: 'a2_naruto_weekend.pdf', label: '鳴門線 土日祝' },
             { name: 'b19_bypassnaruto.pdf', label: 'バイパス鳴門線' },
             { name: 'b21_rohmonnaruto.pdf', label: '老門鳴門線' },
         ];
 
-        // --- STATE ---
-        let state = {
-            currentPage: 'home',
-            depStopId: 'tokushima-st',
-            arrStopId: 'naruto-st',
-            dayType: (new Date().getDay() === 0 || new Date().getDay() === 6) ? 'weekend' : 'weekday',
-            boardingTime: '',
-            arrivalTime: '',
-            isTiming: false,
-            expectedArrivalMs: null,
-            intervalId: null
+        // --- UTIL ---
+        const store = {
+            get(key, fallback) {
+                try { const v = localStorage.getItem('tb.' + key); return v == null ? fallback : JSON.parse(v); }
+                catch (e) { return fallback; }
+            },
+            set(key, value) {
+                try { localStorage.setItem('tb.' + key, JSON.stringify(value)); } catch (e) { /* private mode etc. */ }
+            },
+            remove(key) {
+                try { localStorage.removeItem('tb.' + key); } catch (e) { }
+            }
         };
 
-        // --- CORE LOGIC ---
-        const getTrips = () => {
-            const now = new Date();
-            const currentTime = now.getHours() * 60 + now.getMinutes();
-            const all = state.dayType === 'weekday' ? WEEKDAY_TRIPS : WEEKEND_TRIPS;
-            
-            return all.filter(t => t.stopTimes[state.depStopId] && t.stopTimes[state.arrStopId])
-                .map(t => {
-                    const [h, m] = t.stopTimes[state.depStopId].split(':').map(Number);
-                    let minutes = h * 60 + m;
-                    const adjusted = minutes < currentTime ? minutes + 1440 : minutes;
-                    return { ...t, adjusted };
-                })
-                .sort((a, b) => a.adjusted - b.adjusted)
-                .slice(0, 5);
+        const toMin = (s) => { const [h, m] = s.split(':').map(Number); return h * 60 + m; };
+        const fmtHM = (min) => `${Math.floor(min / 60)}:${String(min % 60).padStart(2, '0')}`;
+        const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+        const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+        const TIMETABLE = {};
+        for (const day of Object.keys(RAW_TIMETABLE)) {
+            TIMETABLE[day] = {};
+            for (const dir of ['down', 'up']) {
+                TIMETABLE[day][dir] = RAW_TIMETABLE[day][dir].map(row => {
+                    const [no, mark, times] = row.split('|');
+                    return { no, mark, times: times.split(',').map(t => t ? toMin(t) : null) };
+                });
+            }
+        }
+
+        // --- 祝日判定（内閣府の祝日法ルールに基づく計算。1980〜2099年対応） ---
+        const holidayCache = {};
+        const holidaysOf = (y) => {
+            if (holidayCache[y]) return holidayCache[y];
+            const nthMonday = (m, n) => { const first = new Date(y, m - 1, 1).getDay(); return 1 + ((8 - first) % 7) + (n - 1) * 7; };
+            const shift = Math.floor((y - 1980) / 4);
+            const spring = Math.floor(20.8431 + 0.242194 * (y - 1980) - shift);
+            const autumn = Math.floor(23.2488 + 0.242194 * (y - 1980) - shift);
+            const base = [
+                [1, 1], [1, nthMonday(1, 2)], [2, 11], [2, 23], [3, spring], [4, 29],
+                [5, 3], [5, 4], [5, 5], [7, nthMonday(7, 3)], [8, 11], [9, nthMonday(9, 3)],
+                [9, autumn], [10, nthMonday(10, 2)], [11, 3], [11, 23]
+            ];
+            const key = (d) => `${d.getMonth() + 1}-${d.getDate()}`;
+            const set = new Set(base.map(([m, d]) => `${m}-${d}`));
+            // 国民の休日（祝日に挟まれた平日）
+            for (const [m, d] of base) {
+                const next = new Date(y, m - 1, d + 1), after = new Date(y, m - 1, d + 2);
+                if (set.has(key(after)) && !set.has(key(next)) && next.getDay() !== 0) set.add(key(next));
+            }
+            // 振替休日（日曜の祝日 → 次の祝日でない日）
+            for (const [m, d] of base) {
+                const date = new Date(y, m - 1, d);
+                if (date.getDay() !== 0) continue;
+                const sub = new Date(y, m - 1, d + 1);
+                while (set.has(key(sub))) sub.setDate(sub.getDate() + 1);
+                set.add(key(sub));
+            }
+            return (holidayCache[y] = set);
         };
+
+        // PDF記載: 土日・祝日・年末年始(12/29〜1/3)・阿波おどり期間(8/12〜8/15)は土日祝ダイヤ
+        const autoDayType = (date) => {
+            const m = date.getMonth() + 1, d = date.getDate(), w = date.getDay();
+            if (w === 0 || w === 6) return 'weekend';
+            if (holidaysOf(date.getFullYear()).has(`${m}-${d}`)) return 'weekend';
+            if ((m === 12 && d >= 29) || (m === 1 && d <= 3)) return 'weekend';
+            if (m === 8 && d >= 12 && d <= 15) return 'weekend';
+            return 'weekday';
+        };
+
+        const DAY_LABEL = { weekday: '平日', weekend: '土日祝' };
+
+        // --- STATE ---
+        const savedRoute = store.get('route', { from: 0, to: 9 });
+        let state = {
+            from: clamp(savedRoute.from | 0, 0, STOPS.length - 1),
+            to: clamp(savedRoute.to | 0, 0, STOPS.length - 1),
+            dayOverride: null,           // null = 自動判定（今日／検索する日のみ適用）
+            mode: ['now', 'depart', 'arrive'].includes(store.get('mode', 'now')) ? store.get('mode', 'now') : 'now',
+            searchDay: 0,                // 0 = 今日, 1 = 明日
+            searchTime: { depart: '', arrive: '' },
+            riding: store.get('riding', null),
+            tickId: null,
+            lastSignature: ''
+        };
+
+        // 乗車中モードは到着から30分経ったら自動で終了
+        if (state.riding && Date.now() > state.riding.arrMs + 30 * 60000) {
+            state.riding = null;
+            store.remove('riding');
+        }
+
+        // --- CORE LOGIC ---
+        // 指定区間で now 以降に発車する便を（必要なら翌日以降も含めて）返す
+        const DEPARTED_GRACE_MS = 60 * 1000;
+        const getUpcoming = (from, to, now, count) => {
+            if (from === to) return [];
+            const dir = from < to ? 'down' : 'up';
+            const result = [];
+            for (let offset = 0; offset < 4 && result.length < count; offset++) {
+                const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset);
+                const dayType = (offset === 0 && state.dayOverride) || autoDayType(date);
+                const dayTrips = [];
+                for (const trip of TIMETABLE[dayType][dir]) {
+                    const dep = trip.times[from], arr = trip.times[to];
+                    if (dep == null || arr == null) continue;
+                    const depMs = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, dep).getTime();
+                    if (depMs < now.getTime() - DEPARTED_GRACE_MS) continue;
+                    const arrMs = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, arr).getTime();
+                    dayTrips.push({ ...trip, dep, arr, depMs, arrMs, offset, dayType, id: `${dayType}-${offset}-${dir}-${trip.no}-${dep}` });
+                }
+                dayTrips.sort((a, b) => a.depMs - b.depMs);
+                result.push(...dayTrips);
+            }
+            return result.slice(0, count);
+        };
+
+        // 時刻を指定して探す。depart: その時刻以降で最初に出る便 / arrive: その時刻までに着く最後の便
+        // 見つかった便（best）と、その前後2本ずつを返す
+        const searchTrips = (from, to, dayOffset, mode, timeMin) => {
+            if (from === to) return null;
+            const now = new Date();
+            const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + dayOffset);
+            const dayType = state.dayOverride || autoDayType(date);
+            const dir = from < to ? 'down' : 'up';
+            const list = [];
+            for (const trip of TIMETABLE[dayType][dir]) {
+                const dep = trip.times[from], arr = trip.times[to];
+                if (dep == null || arr == null) continue;
+                const depMs = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, dep).getTime();
+                const arrMs = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, arr).getTime();
+                list.push({ ...trip, dep, arr, depMs, arrMs, offset: dayOffset, dayType, id: `s-${dayType}-${dayOffset}-${dir}-${trip.no}-${dep}` });
+            }
+            if (!list.length) return { dayType, trips: [], best: null, note: '' };
+            list.sort((a, b) => a.dep - b.dep || a.arr - b.arr);
+            let idx = -1, note = '';
+            if (mode === 'depart') {
+                idx = list.findIndex(t => t.dep >= timeMin);
+                if (idx < 0) { idx = list.length - 1; note = 'この時刻以降の便はありません。最終便を表示しています。'; }
+            } else {
+                // 間に合う便のうち、いちばん遅く出発できる便（バイパス経由などで追い越しがあるため到着順ではなく発車順で判断）
+                list.forEach((t, i) => { if (t.arr <= timeMin) idx = i; });
+                if (idx < 0) {
+                    const earliest = Math.min(...list.map(t => t.arr));
+                    idx = list.findIndex(t => t.arr === earliest);
+                    note = 'この時刻までに着く便はありません。いちばん早く着く便を表示しています。';
+                }
+            }
+            return { dayType, trips: list.slice(Math.max(0, idx - 2), idx + 3), best: list[idx], note };
+        };
+
+        const nowPlus = (min) => {
+            const d = new Date(Date.now() + min * 60000);
+            return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        };
+
+        const formatCountdown = (ms) => {
+            if (ms <= 0) return '0:00';
+            const total = Math.floor(ms / 1000);
+            const h = Math.floor(total / 3600), m = Math.floor((total % 3600) / 60), s = total % 60;
+            if (h > 0) return `${h}時間${String(m).padStart(2, '0')}分`;
+            return `${m}:${String(s).padStart(2, '0')}`;
+        };
+
+        const formatRemainShort = (ms) => {
+            if (ms <= -DEPARTED_GRACE_MS) return '発車済み';
+            if (ms <= 0) return '発車時刻';
+            const min = Math.floor(ms / 60000);
+            if (min < 1) return 'まもなく';
+            if (min < 60) return `あと${min}分`;
+            return `あと${Math.floor(min / 60)}時間${min % 60}分`;
+        };
+
+        const dayPrefix = (offset) => offset === 0 ? '' : offset === 1 ? '明日 ' : '明後日以降 ';
 
         // --- UI RENDERERS ---
         const render = () => {
+            stopTick();
             const root = document.getElementById('root');
             const header = document.getElementById('main-header');
-            header.classList.toggle('hidden', state.currentPage === 'home');
-            
-            root.innerHTML = '';
-            root.className = 'page-container animate-fade-in';
+            const page = router.current();
+            header.classList.toggle('hidden', page.name === 'home' || page.name === 'view');
 
-            if (state.currentPage === 'home') renderHome(root);
-            else if (state.currentPage === 'receive') renderReceive(root);
-            else if (state.currentPage === 'pdf') renderPdf(root);
+            root.innerHTML = '';
+            root.className = page.name === 'view' ? '' : 'page-container animate-fade-in';
+
+            if (page.name === 'home') renderHome(root);
+            else if (page.name === 'countdown') renderCountdown(root);
+            else if (page.name === 'pdf') renderPdfList(root);
+            else if (page.name === 'view') viewer.open(root, page.arg);
+            window.scrollTo(0, 0);
         };
 
         const renderHome = (root) => {
+            const last = PDF_FILES.find(p => p.name === store.get('lastPdf', ''));
             root.innerHTML = `
-                <div class="glass-card" style="text-align: center; margin-top: 40px;">
+                <div class="glass-card" style="text-align: center; margin-top: 32px;">
                     <div style="width: 88px; height: 88px; border-radius: 20px; background: var(--accent-primary); color: #000; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;">
                          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>
                     </div>
                     <h1 style="font-size: 2.2rem; margin-bottom: 8px;">TimelyBus</h1>
-                    <p style="color: var(--text-secondary); margin-bottom: 40px;">徳島バス 時刻表・到着予測</p>
-                    <div style="display: grid; gap: 16px;">
-                        <button class="btn btn-primary" onclick="router.navigate('receive')">バスの到着を予測する</button>
-                        <button class="btn" style="background: transparent" onclick="router.navigate('pdf')">時刻表PDFを見る</button>
+                    <p class="muted" style="margin-bottom: 32px;">徳島バス 時刻表・カウントダウン</p>
+                    <div style="display: grid; gap: 12px;">
+                        ${last ? `<button class="btn btn-primary" onclick="router.navigate('view', '${last.name}')">前回の時刻表を開く（${esc(last.label)}）</button>` : ''}
+                        <button class="btn ${last ? '' : 'btn-primary'}" onclick="router.navigate('pdf')">時刻表PDFを見る</button>
+                        <button class="btn" onclick="router.navigate('countdown')">バスを調べる・カウントダウン</button>
                     </div>
                 </div>
             `;
         };
 
-        const renderReceive = (root) => {
-            if (state.isTiming) {
-                renderTimer(root);
+        const renderCountdown = (root) => {
+            const options = (selected) => STOPS.map((s, i) => `<option value="${i}" ${i === selected ? 'selected' : ''}>${esc(s)}</option>`).join('');
+            const mode = state.dayOverride || 'auto';
+            const searching = state.mode !== 'now';
+            if (searching && !state.searchTime[state.mode]) state.searchTime[state.mode] = nowPlus(state.mode === 'arrive' ? 60 : 0);
+            const baseDate = new Date();
+            if (searching) baseDate.setDate(baseDate.getDate() + state.searchDay);
+            const dayName = searching && state.searchDay === 1 ? '明日' : '今日';
+            root.innerHTML = `
+                <h2>バスを調べる</h2>
+                <div class="seg">
+                    <button class="${state.mode === 'now' ? 'active' : ''}" onclick="actions.setMode('now')">今すぐ</button>
+                    <button class="${state.mode === 'depart' ? 'active' : ''}" onclick="actions.setMode('depart')">出発時刻で</button>
+                    <button class="${state.mode === 'arrive' ? 'active' : ''}" onclick="actions.setMode('arrive')">到着時刻で</button>
+                </div>
+                <div class="glass-card" style="padding: 18px;">
+                    <div class="stop-picker">
+                        <div>
+                            <label for="from-stop">乗車</label>
+                            <select id="from-stop" class="input-field" onchange="actions.setFrom(this.value)">${options(state.from)}</select>
+                        </div>
+                        <button class="swap-btn" onclick="actions.swap()" aria-label="乗車と降車を入れ替え">⇅</button>
+                        <div>
+                            <label for="to-stop">降車</label>
+                            <select id="to-stop" class="input-field" onchange="actions.setTo(this.value)">${options(state.to)}</select>
+                        </div>
+                    </div>
+                    ${searching ? `
+                    <div class="search-row">
+                        <div>
+                            <label>日付</label>
+                            <div class="seg">
+                                <button class="${state.searchDay === 0 ? 'active' : ''}" onclick="actions.setSearchDay(0)">今日</button>
+                                <button class="${state.searchDay === 1 ? 'active' : ''}" onclick="actions.setSearchDay(1)">明日</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="search-time">${state.mode === 'arrive' ? '着きたい時刻' : '出発したい時刻'}</label>
+                            <input id="search-time" type="time" class="input-field" value="${state.searchTime[state.mode]}" oninput="actions.setSearchTime(this.value)" onchange="actions.setSearchTime(this.value)">
+                        </div>
+                    </div>` : ''}
+                    <div style="margin-top: 14px;">
+                        <div class="small muted" style="margin-bottom: 4px;">ダイヤ（${dayName}は${DAY_LABEL[autoDayType(baseDate)]}）</div>
+                        <div class="seg">
+                            <button class="${mode === 'auto' ? 'active' : ''}" onclick="actions.setDay(null)">自動</button>
+                            <button class="${mode === 'weekday' ? 'active' : ''}" onclick="actions.setDay('weekday')">平日</button>
+                            <button class="${mode === 'weekend' ? 'active' : ''}" onclick="actions.setDay('weekend')">土日祝</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="cd-results" style="display: grid; gap: 16px;"></div>
+                <p class="small muted">鳴門線の主要停留所のみ対応（${esc(PDF_FILES[0].label)}・${esc(PDF_FILES[1].label)}のPDFより）。道路状況により遅れることがあります。</p>
+            `;
+            state.lastSignature = '';
+            tick();
+            state.tickId = setInterval(tick, 1000);
+        };
+
+        const renderResults = (container, trips, now) => {
+            if (state.from === state.to) {
+                container.innerHTML = `<div class="glass-card muted" style="text-align:center">乗車と降車に別の停留所を選んでください。</div>`;
+                return;
+            }
+            if (!trips.length) {
+                container.innerHTML = `<div class="glass-card muted" style="text-align:center">この区間を直通する便が見つかりません。<br>別の停留所を選ぶか、時刻表PDFをご確認ください。</div>`;
+                return;
+            }
+            const [next, ...rest] = trips;
+            let lastOffset = next.offset;
+            container.innerHTML = `
+                <div class="glass-card next-card">
+                    <div class="status-badge"><span class="dot animate-pulse"></span><span>${dayPrefix(next.offset)}${DAY_LABEL[next.dayType]}ダイヤ</span></div>
+                    <div class="label">${esc(STOPS[state.from])} 発車まで</div>
+                    <div class="time-display" data-dep="${next.depMs}" data-big="1">--:--</div>
+                    <div class="trip-route">
+                        <span>${dayPrefix(next.offset)}${fmtHM(next.dep)} 発</span><span class="arrow">→</span><span>${fmtHM(next.arr)} 着</span>
+                    </div>
+                    <div class="trip-meta">所要 ${next.arr - next.dep}分 ・ 行先番号 ${esc(next.no)} ・ ${esc(MARKS[next.mark] || '')}</div>
+                    <button class="btn" style="margin-top: 20px;" onclick="actions.ride('${next.id}')">このバスに乗る（到着までカウント）</button>
+                </div>
+                ${rest.length ? `
+                <div>
+                    <h3 class="small muted" style="margin: 0 2px 8px;">その後の便</h3>
+                    <div class="trip-list">
+                        ${rest.map(t => {
+                            const sep = t.offset !== lastOffset ? `<div class="day-sep">${t.offset === 1 ? '明日' : '明後日以降'}（${DAY_LABEL[t.dayType]}ダイヤ）</div>` : '';
+                            lastOffset = t.offset;
+                            return `${sep}
+                            <div class="trip-item">
+                                <div class="t">${fmtHM(t.dep)} 発 <span class="arr">→ ${fmtHM(t.arr)} 着</span></div>
+                                <div class="remain" data-dep="${t.depMs}">--</div>
+                                <div class="sub">所要${t.arr - t.dep}分 ・ ${esc(MARKS[t.mark] || '')}</div>
+                                <button class="ride" onclick="actions.ride('${t.id}')">乗る</button>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>` : ''}
+            `;
+        };
+
+        const renderSearchResults = (container, result) => {
+            if (state.from === state.to) {
+                container.innerHTML = `<div class="glass-card muted" style="text-align:center">乗車と降車に別の停留所を選んでください。</div>`;
+                return;
+            }
+            if (!result || !result.best) {
+                container.innerHTML = `<div class="glass-card muted" style="text-align:center">この区間を直通する便が見つかりません。<br>別の停留所を選ぶか、時刻表PDFをご確認ください。</div>`;
+                return;
+            }
+            const b = result.best;
+            const time = state.searchTime[state.mode];
+            const day = state.searchDay === 1 ? '明日 ' : '';
+            const question = state.mode === 'arrive'
+                ? `${day}${esc(STOPS[state.to])}に ${esc(time)} までに着くには`
+                : `${day}${esc(STOPS[state.from])}を ${esc(time)} 以降に出る最初の便`;
+            const now = Date.now();
+            const departed = (t) => t.depMs + DEPARTED_GRACE_MS <= now;
+            container.innerHTML = `
+                <div class="glass-card next-card result-head">
+                    <div class="status-badge"><span class="dot"></span><span>${day}${DAY_LABEL[result.dayType]}ダイヤ</span></div>
+                    <div class="q">${question}</div>
+                    <div class="trip-route" style="font-size: 1.9rem;">
+                        <span>${fmtHM(b.dep)} 発</span><span class="arrow">→</span><span>${fmtHM(b.arr)} 着</span>
+                    </div>
+                    <div class="trip-meta">${esc(STOPS[state.from])} → ${esc(STOPS[state.to])} ・ 所要 ${b.arr - b.dep}分 ・ 行先番号 ${esc(b.no)}</div>
+                    <div class="trip-meta">${esc(MARKS[b.mark] || '')}</div>
+                    ${!departed(b) ? `<div class="trip-meta" style="color: var(--accent-primary); font-weight: 700; font-size: 0.95rem;">発車まで <span data-dep="${b.depMs}" data-plain="1"></span></div>` : ''}
+                    ${result.note ? `<div class="trip-meta" style="color: var(--warn-color); margin-top: 8px;">${result.note}</div>` : ''}
+                    ${b.arrMs > now ? `<button class="btn" style="margin-top: 18px;" onclick="actions.ride('${b.id}')">この便でカウントダウン</button>` : ''}
+                </div>
+                <div>
+                    <h3 class="small muted" style="margin: 0 2px 8px;">前後の便</h3>
+                    <div class="trip-list">
+                        ${result.trips.map(t => `
+                            <div class="trip-item ${t === b ? 'best' : ''} ${departed(t) ? 'past' : ''}">
+                                <div class="t">${fmtHM(t.dep)} 発 <span class="arr">→ ${fmtHM(t.arr)} 着</span>${t === b ? '<span class="tag">おすすめ</span>' : ''}</div>
+                                <div class="remain" data-dep="${t.depMs}">--</div>
+                                <div class="sub">${state.mode === 'arrive' && t.arr > toMin(time) ? '<span style="color: var(--warn-color); font-weight: 700;">間に合わない</span> ・ ' : ''}所要${t.arr - t.dep}分 ・ ${esc(MARKS[t.mark] || '')}</div>
+                                ${t.arrMs > now ? `<button class="ride" onclick="actions.ride('${t.id}')">乗る</button>` : '<span></span>'}
+                            </div>`).join('')}
+                    </div>
+                </div>
+            `;
+        };
+
+        const renderRiding = (container, now) => {
+            const r = state.riding;
+            container.innerHTML = `
+                <div class="glass-card next-card">
+                    <div class="status-badge" id="ride-badge"><span class="dot animate-pulse"></span><span id="ride-status">乗車中</span></div>
+                    <div class="label">${esc(STOPS[r.to])} 到着まで</div>
+                    <div class="time-display" id="ride-countdown">--:--</div>
+                    <div class="trip-route">
+                        <span>${fmtHM(r.dep)} 発</span><span class="arrow">→</span><span>${fmtHM(r.arr)} 着予定</span>
+                    </div>
+                    <div class="trip-meta">${esc(STOPS[r.from])} → ${esc(STOPS[r.to])} ・ 行先番号 ${esc(r.no)}</div>
+                    <div class="progress"><div id="ride-progress" style="width: 0%"></div></div>
+                    <button class="btn" style="margin-top: 20px;" onclick="actions.endRide()">乗車を終了</button>
+                </div>
+            `;
+        };
+
+        const updateRiding = (now) => {
+            const r = state.riding;
+            const el = document.getElementById('ride-countdown');
+            if (!el) return;
+            const status = document.getElementById('ride-status');
+            const badge = document.getElementById('ride-badge');
+            const t = now.getTime();
+            const diffArr = r.arrMs - t;
+            if (t < r.depMs) {
+                status.textContent = `発車まで ${formatCountdown(r.depMs - t)}`;
+            } else if (diffArr > 0) {
+                status.textContent = '乗車中';
+            } else {
+                status.textContent = '到着予定時刻を過ぎました';
+                badge.style.background = 'var(--success-glow)';
+                badge.style.color = 'var(--success-color)';
+            }
+            el.textContent = formatCountdown(diffArr);
+            el.classList.toggle('long', diffArr >= 3600000);
+            el.classList.toggle('arrived', diffArr <= 0);
+            const pct = clamp((t - r.depMs) / Math.max(1, r.arrMs - r.depMs), 0, 1) * 100;
+            document.getElementById('ride-progress').style.width = pct + '%';
+        };
+
+        // 1秒ごとの更新。便の並びが変わったときだけ再描画し、普段は数字だけ書き換える
+        let lastTrips = [];
+        const tick = () => {
+            const container = document.getElementById('cd-results');
+            if (!container) return;
+            const now = new Date();
+
+            if (state.riding) {
+                if (state.lastSignature !== 'riding') {
+                    renderRiding(container, now);
+                    state.lastSignature = 'riding';
+                }
+                updateRiding(now);
                 return;
             }
 
-            const trips = getTrips();
-            if (!state.boardingTime && trips.length > 0) {
-                state.boardingTime = trips[0].stopTimes[state.depStopId];
-                state.arrivalTime = trips[0].stopTimes[state.arrStopId];
+            if (state.mode === 'now') {
+                const trips = getUpcoming(state.from, state.to, now, 6);
+                lastTrips = trips;
+                const signature = `now-${state.from}-${state.to}-${state.dayOverride}-` + trips.map(t => t.id).join(',');
+                if (signature !== state.lastSignature) {
+                    renderResults(container, trips, now);
+                    state.lastSignature = signature;
+                }
+            } else {
+                // 検索結果は条件が変わったとき（と、便が発車したとき）だけ描き直す
+                const time = state.searchTime[state.mode];
+                const departedCount = lastTrips.filter(t => t.depMs + DEPARTED_GRACE_MS <= now.getTime()).length;
+                const signature = `${state.mode}-${state.from}-${state.to}-${state.dayOverride}-${state.searchDay}-${time}-${now.toDateString()}-${departedCount}`;
+                if (signature !== state.lastSignature && time) {
+                    const result = searchTrips(state.from, state.to, state.searchDay, state.mode, toMin(time));
+                    lastTrips = result ? result.trips : [];
+                    renderSearchResults(container, result);
+                    state.lastSignature = `${state.mode}-${state.from}-${state.to}-${state.dayOverride}-${state.searchDay}-${time}-${now.toDateString()}-${lastTrips.filter(t => t.depMs + DEPARTED_GRACE_MS <= now.getTime()).length}`;
+                }
             }
-
-            root.innerHTML = `
-                <h2>運行ルート設定</h2>
-                
-                <div class="day-toggle">
-                    <button class="${state.dayType === 'weekday' ? 'active' : ''}" onclick="actions.setDay('weekday')">平日</button>
-                    <button class="${state.dayType === 'weekend' ? 'active' : ''}" onclick="actions.setDay('weekend')">土日祝</button>
-                </div>
-
-                <div class="glass-card">
-                    <div style="margin-bottom: 16px;">
-                        <label style="font-size: 0.8rem; color: var(--text-secondary)">出発地</label>
-                        <select class="input-field" onchange="actions.setDep(this.value)">
-                            ${STOPS.map(s => `<option value="${s.id}" ${s.id === state.depStopId ? 'selected' : ''}>${s.name}</option>`).join('')}
-                        </select>
-                    </div>
-                    <div style="margin-bottom: 16px;">
-                        <label style="font-size: 0.8rem; color: var(--text-secondary)">到着地</label>
-                        <select class="input-field" onchange="actions.setArr(this.value)">
-                            ${STOPS.map(s => `<option value="${s.id}" ${s.id === state.arrStopId ? 'selected' : ''}>${s.name}</option>`).join('')}
-                        </select>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px;">
-                        <div>
-                            <label style="font-size: 0.8rem; color: var(--text-secondary)">乗車時刻</label>
-                            <input type="time" class="input-field" value="${state.boardingTime}" onchange="actions.updateBoarding(this.value)">
-                        </div>
-                        <div>
-                            <label style="font-size: 0.8rem; color: var(--text-secondary)">到着予定</label>
-                            <input type="time" class="input-field" value="${state.arrivalTime}" onchange="state.arrivalTime = this.value">
-                        </div>
-                    </div>
-                    <button class="btn btn-primary" style="margin-top: 24px;" onclick="actions.startTimer()">予測を開始する</button>
-                </div>
-
-                <div class="glass-card">
-                    <h3 style="font-size: 0.9rem; margin-bottom: 12px; color: var(--text-secondary)">直近の便を選択</h3>
-                    <div style="display: grid; gap: 8px;">
-                        ${trips.length ? trips.map(t => `
-                            <div class="trip-item ${t.stopTimes[state.depStopId] === state.boardingTime ? 'selected' : ''}" onclick="actions.selectTrip('${t.stopTimes[state.depStopId]}', '${t.stopTimes[state.arrStopId]}')">
-                                <span style="font-weight: bold">${t.stopTimes[state.depStopId]} 発</span>
-                                <span style="color: var(--text-secondary)">→ ${t.stopTimes[state.arrStopId]} 着</span>
-                            </div>
-                        `).join('') : '<p style="text-align:center; color: var(--text-secondary)">便がありません</p>'}
-                    </div>
-                </div>
-            `;
+            container.querySelectorAll('[data-dep]').forEach(el => {
+                const diff = Number(el.dataset.dep) - now.getTime();
+                if (el.dataset.plain) {
+                    el.textContent = diff > 0 ? formatCountdown(diff) : '発車時刻';
+                } else if (el.dataset.big) {
+                    el.textContent = diff > 0 ? formatCountdown(diff) : '発車時刻';
+                    el.classList.toggle('long', diff >= 3600000 || diff <= 0);
+                    el.classList.toggle('soon', diff > 0 && diff <= 5 * 60000);
+                    el.classList.toggle('now', diff <= 60000);
+                } else {
+                    el.textContent = formatRemainShort(diff);
+                }
+            });
         };
 
-        const renderTimer = (root) => {
-            root.innerHTML = `
-                <div class="glass-card" style="text-align: center; padding: 40px 20px;">
-                    <div id="timer-badge" class="status-badge" style="background: var(--accent-glow); color: var(--accent-primary);">
-                        <span style="width: 8px; height: 8px; border-radius: 50%; background: currentColor;" class="animate-pulse"></span>
-                        <span id="timer-status">バスの到着を待っています...</span>
-                    </div>
-                    <div style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 8px;">
-                        ${STOPS.find(s=>s.id===state.depStopId).name} → ${STOPS.find(s=>s.id===state.arrStopId).name}
-                    </div>
-                    <div id="countdown" class="time-display">--:--</div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border-top: 1px solid var(--border-color); padding-top: 20px;">
-                        <div>
-                            <div style="font-size: 0.8rem; color: var(--text-secondary)">出発</div>
-                            <div style="font-weight: bold">${state.boardingTime}</div>
-                        </div>
-                        <div>
-                            <div style="font-size: 0.8rem; color: var(--text-secondary)">予測</div>
-                            <div style="font-weight: bold">${state.arrivalTime}</div>
-                        </div>
-                    </div>
-                    <button class="btn" style="margin-top: 32px; background: transparent;" onclick="actions.stopTimer()">設定に戻る</button>
-                </div>
-            `;
-            updateCountdownUI();
+        const stopTick = () => {
+            if (state.tickId) clearInterval(state.tickId);
+            state.tickId = null;
         };
 
-        const renderPdf = (root) => {
+        const renderPdfList = (root) => {
+            const last = store.get('lastPdf', '');
             root.innerHTML = `
                 <h2>時刻表PDF</h2>
-                <p style="color: var(--text-secondary); font-size: 0.9rem">タップすると新しいタブでPDFを開きます。</p>
-                <div style="display: grid; gap: 12px; margin-top: 8px;">
+                <p class="muted small">「表示」でアプリ内ビューアが開きます。拡大した倍率と位置は時刻表ごとに記憶され、次回はそのまま表示されます。</p>
+                <div style="display: grid; gap: 12px;">
                     ${PDF_FILES.map(pdf => `
-                        <div class="glass-card" style="display: flex; flex-direction: column; gap: 16px;">
-                            <div style="font-weight: 600; font-size: 1.1rem">${pdf.label}</div>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                                <a href="./pdf/${pdf.name}" target="_blank" class="btn btn-primary" style="padding: 8px;">表示</a>
-                                <a href="./pdf/${pdf.name}" download class="btn" style="padding: 8px;">保存</a>
+                        <div class="glass-card pdf-card" ${pdf.name === last ? 'style="border-color: var(--accent-primary)"' : ''}>
+                            <div style="font-weight: 600; font-size: 1.1rem">${esc(pdf.label)}${pdf.name === last ? ' <span class="small" style="color: var(--accent-primary)">前回表示</span>' : ''}</div>
+                            <div class="pdf-actions">
+                                <button class="btn btn-primary" onclick="router.navigate('view', '${pdf.name}')">表示</button>
+                                <a href="./pdf/${pdf.name}" download class="btn">保存</a>
                             </div>
                         </div>
                     `).join('')}
@@ -401,74 +936,372 @@
             `;
         };
 
-        // --- ACTIONS ---
-        const router = {
-            navigate: (page) => {
-                state.currentPage = page;
-                if (page !== 'receive') actions.stopTimer();
-                render();
-            }
+        // --- PDF VIEWER ---
+        // PDF.js でページを高解像度の画像にし、拡大・スクロールを自前で扱う。
+        // 倍率とスクロール位置はファイルごとに localStorage へ保存する。
+        const PDFJS_BASE = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+        const RENDER_LONG_SIDE = 2600;   // 画像化するときの長辺ピクセル数（3倍程度まで拡大しても読める）
+        const MIN_ZOOM = 1, MAX_ZOOM = 6;
+        const pageCache = {};             // name -> [{url, w, h}]
+
+        let pdfjsPromise = null;
+        const loadPdfJs = () => {
+            if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+            if (pdfjsPromise) return pdfjsPromise;
+            pdfjsPromise = new Promise((resolve, reject) => {
+                const s = document.createElement('script');
+                s.src = PDFJS_BASE + 'pdf.min.js';
+                s.onload = () => {
+                    window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_BASE + 'pdf.worker.min.js';
+                    resolve(window.pdfjsLib);
+                };
+                s.onerror = () => { pdfjsPromise = null; reject(new Error('PDF.js の読み込みに失敗しました')); };
+                document.head.appendChild(s);
+            });
+            return pdfjsPromise;
         };
 
-        const actions = {
-            setDay: (d) => { state.dayType = d; state.boardingTime = ''; render(); },
-            setDep: (id) => { state.depStopId = id; state.boardingTime = ''; render(); },
-            setArr: (id) => { state.arrStopId = id; state.boardingTime = ''; render(); },
-            selectTrip: (b, a) => { state.boardingTime = b; state.arrivalTime = a; render(); },
-            updateBoarding: (val) => {
-                if (state.boardingTime && state.arrivalTime) {
-                    const toMin = (s) => s.split(':').map(Number).reduce((h, m) => h * 60 + m);
-                    const diff = toMin(state.arrivalTime) - toMin(state.boardingTime);
-                    let newArr = toMin(val) + diff;
-                    if (newArr < 0) newArr += 1440;
-                    newArr %= 1440;
-                    const h = Math.floor(newArr / 60).toString().padStart(2, '0');
-                    const m = (newArr % 60).toString().padStart(2, '0');
-                    state.arrivalTime = `${h}:${m}`;
+        // ページ周囲の白い余白を切り落とす（その分、表が大きく表示される）
+        const trimWhitespace = (canvas) => {
+            const SAMPLE = 4, PAD = 24;
+            const sw = Math.ceil(canvas.width / SAMPLE), sh = Math.ceil(canvas.height / SAMPLE);
+            const small = document.createElement('canvas');
+            small.width = sw; small.height = sh;
+            const sctx = small.getContext('2d');
+            sctx.drawImage(canvas, 0, 0, sw, sh);
+            const data = sctx.getImageData(0, 0, sw, sh).data;
+            let x0 = sw, y0 = sh, x1 = -1, y1 = -1;
+            for (let y = 0; y < sh; y++) {
+                for (let x = 0; x < sw; x++) {
+                    const i = (y * sw + x) * 4;
+                    if (data[i] < 235 || data[i + 1] < 235 || data[i + 2] < 235) {
+                        if (x < x0) x0 = x; if (x > x1) x1 = x;
+                        if (y < y0) y0 = y; if (y > y1) y1 = y;
+                    }
                 }
-                state.boardingTime = val;
-                render();
+            }
+            small.width = small.height = 0;
+            if (x1 < 0) return canvas;
+            const left = Math.max(0, x0 * SAMPLE - PAD), top = Math.max(0, y0 * SAMPLE - PAD);
+            const right = Math.min(canvas.width, (x1 + 1) * SAMPLE + PAD), bottom = Math.min(canvas.height, (y1 + 1) * SAMPLE + PAD);
+            const out = document.createElement('canvas');
+            out.width = right - left; out.height = bottom - top;
+            out.getContext('2d').drawImage(canvas, left, top, out.width, out.height, 0, 0, out.width, out.height);
+            return out;
+        };
+
+        const renderPdfPages = async (name, onProgress) => {
+            if (pageCache[name]) return pageCache[name];
+            const pdfjs = await loadPdfJs();
+            const doc = await pdfjs.getDocument('./pdf/' + name).promise;
+            const pages = [];
+            for (let i = 1; i <= doc.numPages; i++) {
+                onProgress(i, doc.numPages);
+                const page = await doc.getPage(i);
+                const base = page.getViewport({ scale: 1 });
+                const viewport = page.getViewport({ scale: RENDER_LONG_SIDE / Math.max(base.width, base.height) });
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.round(viewport.width);
+                canvas.height = Math.round(viewport.height);
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                await page.render({ canvasContext: ctx, viewport }).promise;
+                const out = trimWhitespace(canvas);
+                const blob = await new Promise(res => out.toBlob(res, 'image/png'));
+                pages.push({ url: URL.createObjectURL(blob), w: out.width, h: out.height });
+                canvas.width = canvas.height = 0; // メモリ解放（iOS対策）
+                out.width = out.height = 0;
+                page.cleanup();
+            }
+            doc.destroy();
+            return (pageCache[name] = pages);
+        };
+
+        const viewer = {
+            v: null,
+
+            open(root, name) {
+                const pdf = PDF_FILES.find(p => p.name === name);
+                if (!pdf) { router.navigate('pdf', null, true); return; }
+                store.set('lastPdf', name);
+
+                root.innerHTML = `
+                    <div class="viewer">
+                        <div class="viewer-bar">
+                            <button class="icon-btn" onclick="router.back('pdf')" aria-label="戻る">‹</button>
+                            <div class="viewer-title">${esc(pdf.label)}</div>
+                            <button class="icon-btn" onclick="viewer.step(-1)" aria-label="縮小">−</button>
+                            <button class="icon-btn zoom-label" id="zoom-label" onclick="viewer.fit()" aria-label="幅に合わせる">100%</button>
+                            <button class="icon-btn" onclick="viewer.step(1)" aria-label="拡大">＋</button>
+                        </div>
+                        <div class="viewer-scroll" id="viewer-scroll">
+                            <div class="viewer-pages" id="viewer-pages"><div class="viewer-msg" id="viewer-msg">読み込み中…</div></div>
+                        </div>
+                        <div class="viewer-hint" id="viewer-hint" style="opacity:0"></div>
+                    </div>
+                `;
+                document.body.style.overflow = 'hidden';
+
+                const scroll = document.getElementById('viewer-scroll');
+                const inner = document.getElementById('viewer-pages');
+                const v = this.v = { name, scroll, inner, zoom: 1, ready: false, pinch: null, lastTap: null, saveTimer: null };
+                this.bindGestures(v);
+
+                renderPdfPages(name, (i, n) => {
+                    const msg = document.getElementById('viewer-msg');
+                    if (msg) msg.textContent = `読み込み中… ${i} / ${n} ページ`;
+                }).then(pages => {
+                    if (this.v !== v) return;
+                    inner.innerHTML = pages.map(p => `<img src="${p.url}" width="${p.w}" height="${p.h}" alt="" draggable="false">`).join('');
+                    v.pages = pages;
+                    v.ready = true;
+                    this.restore(v);
+                }).catch(err => {
+                    if (this.v !== v) return;
+                    console.error(err);
+                    inner.innerHTML = `
+                        <div class="viewer-msg">
+                            時刻表を表示できませんでした（オフラインの可能性があります）。<br><br>
+                            <a class="btn btn-primary" href="./pdf/${name}" target="_blank" style="max-width: 280px; margin: 0 auto;">ブラウザでPDFを開く</a>
+                        </div>`;
+                });
             },
-            startTimer: () => {
-                if (!state.arrivalTime) return;
-                const [h, m] = state.arrivalTime.split(':').map(Number);
-                const now = new Date();
-                let arrive = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0);
-                const nowTotal = now.getHours() * 60 + now.getMinutes();
-                if (h * 60 + m < nowTotal - 120) arrive.setDate(arrive.getDate() + 1);
-                
-                state.expectedArrivalMs = arrive.getTime();
-                state.isTiming = true;
-                render();
-                state.intervalId = setInterval(updateCountdownUI, 1000);
+
+            close() {
+                if (!this.v) return;
+                this.save(this.v);
+                clearTimeout(this.v.saveTimer);
+                this.v = null;
+                document.body.style.overflow = '';
             },
-            stopTimer: () => {
-                state.isTiming = false;
-                if (state.intervalId) clearInterval(state.intervalId);
-                render();
+
+            // 初回の倍率: スマホで文字が読めるくらいの幅にする（横長ページ≒画面の高さに合わせる）
+            defaultZoom(v) {
+                const p = v.pages[0];
+                const targetWidth = p.w > p.h ? Math.max(1000, v.scroll.clientHeight * p.w / p.h) : 1100;
+                return clamp(targetWidth / v.scroll.clientWidth, MIN_ZOOM, 3);
+            },
+
+            restore(v) {
+                const saved = store.get('view.' + v.name, null);
+                this.setZoom(v, saved ? saved.zoom : this.defaultZoom(v), 0, 0, true);
+                requestAnimationFrame(() => {
+                    const s = v.scroll;
+                    if (saved) {
+                        s.scrollLeft = saved.x * s.scrollWidth;
+                        s.scrollTop = saved.y * s.scrollHeight;
+                        this.hint(`前回の倍率（${Math.round(v.zoom * 100)}%）で表示しています`);
+                    } else {
+                        this.hint('2本指で拡大・縮小／ダブルタップで切替（倍率は記憶されます）');
+                    }
+                });
+            },
+
+            save(v) {
+                if (!v || !v.ready) return;
+                const s = v.scroll;
+                store.set('view.' + v.name, {
+                    zoom: Math.round(v.zoom * 100) / 100,
+                    x: s.scrollWidth ? s.scrollLeft / s.scrollWidth : 0,
+                    y: s.scrollHeight ? s.scrollTop / s.scrollHeight : 0
+                });
+            },
+
+            scheduleSave(v) {
+                clearTimeout(v.saveTimer);
+                v.saveTimer = setTimeout(() => this.save(v), 300);
+            },
+
+            // ax, ay: 拡大の基準点（スクロール領域内の座標）
+            setZoom(v, zoom, ax, ay, silent) {
+                zoom = clamp(zoom, MIN_ZOOM, MAX_ZOOM);
+                const s = v.scroll;
+                const ratio = zoom / v.zoom;
+                const cx = s.scrollLeft + ax, cy = s.scrollTop + ay;
+                v.zoom = zoom;
+                v.inner.style.width = (s.clientWidth * zoom) + 'px';
+                s.scrollLeft = cx * ratio - ax;
+                s.scrollTop = cy * ratio - ay;
+                const label = document.getElementById('zoom-label');
+                if (label) label.textContent = Math.round(zoom * 100) + '%';
+                if (!silent) this.scheduleSave(v);
+            },
+
+            step(dir) {
+                const v = this.v;
+                if (!v || !v.ready) return;
+                const s = v.scroll;
+                this.setZoom(v, v.zoom * (dir > 0 ? 1.25 : 0.8), s.clientWidth / 2, s.clientHeight / 2);
+            },
+
+            fit() {
+                const v = this.v;
+                if (!v || !v.ready) return;
+                this.setZoom(v, 1, 0, 0);
+            },
+
+            hint(text) {
+                const el = document.getElementById('viewer-hint');
+                if (!el) return;
+                el.textContent = text;
+                el.style.opacity = '1';
+                clearTimeout(this.hintTimer);
+                this.hintTimer = setTimeout(() => { el.style.opacity = '0'; }, 2500);
+            },
+
+            bindGestures(v) {
+                const s = v.scroll;
+                const point = (t) => { const r = s.getBoundingClientRect(); return { x: t.clientX - r.left, y: t.clientY - r.top }; };
+                const dist = (a, b) => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+
+                s.addEventListener('touchstart', (e) => {
+                    if (!v.ready) return;
+                    if (e.touches.length === 2) {
+                        v.pinch = { d: dist(e.touches[0], e.touches[1]), zoom: v.zoom };
+                        v.lastTap = null;
+                    }
+                }, { passive: true });
+
+                s.addEventListener('touchmove', (e) => {
+                    if (!v.pinch || e.touches.length !== 2) return;
+                    e.preventDefault();
+                    const [a, b] = e.touches;
+                    const mid = point({ clientX: (a.clientX + b.clientX) / 2, clientY: (a.clientY + b.clientY) / 2 });
+                    this.setZoom(v, v.pinch.zoom * dist(a, b) / v.pinch.d, mid.x, mid.y);
+                }, { passive: false });
+
+                s.addEventListener('touchend', (e) => {
+                    if (v.pinch) {
+                        if (e.touches.length < 2) v.pinch = null;
+                        return;
+                    }
+                    if (!v.ready || e.touches.length || e.changedTouches.length !== 1) return;
+                    // ダブルタップ: 幅合わせ ⇔ 記憶した倍率（なければ初期倍率）
+                    const t = e.changedTouches[0];
+                    const now = Date.now();
+                    const last = v.lastTap;
+                    if (last && now - last.time < 300 && Math.hypot(t.clientX - last.x, t.clientY - last.y) < 30) {
+                        e.preventDefault();
+                        const p = point(t);
+                        const target = v.zoom > 1.05 ? 1 : Math.max(1.5, v.preferred || this.defaultZoom(v));
+                        if (v.zoom > 1.05) v.preferred = v.zoom;
+                        this.setZoom(v, target, p.x, p.y);
+                        v.lastTap = null;
+                    } else {
+                        v.lastTap = { time: now, x: t.clientX, y: t.clientY };
+                    }
+                });
+
+                // パソコン: ダブルクリック / Ctrl+ホイール
+                s.addEventListener('dblclick', (e) => {
+                    if (!v.ready) return;
+                    const p = point(e);
+                    this.setZoom(v, v.zoom > 1.05 ? 1 : this.defaultZoom(v), p.x, p.y);
+                });
+                s.addEventListener('wheel', (e) => {
+                    if (!v.ready || !e.ctrlKey) return;
+                    e.preventDefault();
+                    const p = point(e);
+                    this.setZoom(v, v.zoom * Math.exp(-e.deltaY / 300), p.x, p.y);
+                }, { passive: false });
+
+                s.addEventListener('scroll', () => { if (v.ready) this.scheduleSave(v); }, { passive: true });
             }
         };
 
-        const updateCountdownUI = () => {
-            const el = document.getElementById('countdown');
-            const statusEl = document.getElementById('timer-status');
-            const badge = document.getElementById('timer-badge');
-            if (!el) return;
+        // iOS Safari のページ全体のピンチズームをビューア表示中は止める（ビューア側で拡大する）
+        document.addEventListener('gesturestart', (e) => { if (viewer.v) e.preventDefault(); });
 
-            const diff = state.expectedArrivalMs - Date.now();
-            if (diff <= 0) {
-                el.innerText = '00:00';
-                el.classList.add('arrived');
-                statusEl.innerText = '到着予定時刻を過ぎました';
-                badge.style.background = 'var(--success-glow)';
-                badge.style.color = 'var(--success-color)';
-                return;
+        // 画面回転・リサイズ時は倍率を保ったまま幅を合わせ直す
+        window.addEventListener('resize', () => {
+            const v = viewer.v;
+            if (!v || !v.ready) return;
+            const s = v.scroll;
+            const x = s.scrollLeft / s.scrollWidth, y = s.scrollTop / s.scrollHeight;
+            v.inner.style.width = (s.clientWidth * v.zoom) + 'px';
+            s.scrollLeft = x * s.scrollWidth;
+            s.scrollTop = y * s.scrollHeight;
+        });
+
+        // --- ROUTER（URLの # を使うので、スマホの「戻る」ボタンで前の画面に戻れる） ---
+        let inAppNavigations = 0;
+        const router = {
+            current: () => {
+                const [name, arg] = location.hash.replace(/^#/, '').split('/');
+                if (['countdown', 'pdf', 'view'].includes(name)) return { name, arg: arg ? decodeURIComponent(arg) : null };
+                return { name: 'home', arg: null };
+            },
+            navigate: (page, arg, replace) => {
+                const hash = page === 'home' ? '' : '#' + page + (arg ? '/' + encodeURIComponent(arg) : '');
+                const url = location.pathname + location.search + hash;
+                if (replace) history.replaceState(null, '', url);
+                else { history.pushState(null, '', url); inAppNavigations++; }
+                onRouteChange();
+            },
+            back: (fallback) => {
+                if (inAppNavigations > 0) history.back();
+                else router.navigate(fallback, null, true);
             }
+        };
 
-            const h = Math.floor(diff / 3600000);
-            const m = Math.floor((diff % 3600000) / 60000);
-            const s = Math.floor((diff % 60000) / 1000);
-            el.innerText = `${h > 0 ? h + ':' : ''}${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        const onRouteChange = () => {
+            if (router.current().name !== 'view') viewer.close();
+            render();
+        };
+
+        window.addEventListener('popstate', () => {
+            inAppNavigations = Math.max(0, inAppNavigations - 1);
+            onRouteChange();
+        });
+
+        // 画面を閉じる・アプリを切り替えるときにビューアの状態を保存
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) viewer.save(viewer.v);
+            else tick();
+        });
+
+        // --- ACTIONS ---
+        const actions = {
+            setFrom: (v) => { state.from = Number(v); actions.saveRoute(); },
+            setTo: (v) => { state.to = Number(v); actions.saveRoute(); },
+            swap: () => {
+                [state.from, state.to] = [state.to, state.from];
+                document.getElementById('from-stop').value = state.from;
+                document.getElementById('to-stop').value = state.to;
+                actions.saveRoute();
+            },
+            saveRoute: () => {
+                store.set('route', { from: state.from, to: state.to });
+                if (state.riding) actions.endRide();
+                else tick();
+            },
+            setDay: (d) => { state.dayOverride = d; render(); },
+            setMode: (m) => {
+                state.mode = m;
+                store.set('mode', m);
+                if (state.riding) { state.riding = null; store.remove('riding'); }
+                render();
+            },
+            setSearchDay: (d) => { state.searchDay = d; render(); },
+            setSearchTime: (v) => {
+                if (!/^\d{1,2}:\d{2}/.test(v)) return;
+                state.searchTime[state.mode] = v.slice(0, 5);
+                tick();
+            },
+            ride: (id) => {
+                const t = lastTrips.find(x => x.id === id);
+                if (!t) return;
+                state.riding = { from: state.from, to: state.to, no: t.no, dep: t.dep, arr: t.arr, depMs: t.depMs, arrMs: t.arrMs };
+                store.set('riding', state.riding);
+                tick();
+            },
+            endRide: () => {
+                state.riding = null;
+                store.remove('riding');
+                state.lastSignature = '';
+                tick();
+            }
         };
 
         // Initialize
