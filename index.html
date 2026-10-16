@@ -6,6 +6,13 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#0d1117">
+    <script>
+        // 表示テーマ（自動／ライト／ダーク）を描画前に反映して、ちらつきを防ぐ
+        try {
+            const t = JSON.parse(localStorage.getItem('tb.theme'));
+            if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+        } catch (e) { }
+    </script>
     <link rel="manifest" href="./manifest.webmanifest">
     <link rel="apple-touch-icon" href="./icon.png">
     <link rel="icon" href="./icon.png">
@@ -28,6 +35,17 @@
             --warn-glow: rgba(240, 136, 62, 0.35);
             --danger-color: #ff7b72;
             --border-color: rgba(240, 246, 252, 0.1);
+            --on-accent: #000;
+            --accent-tint: rgba(88, 166, 255, 0.12);
+            --time-color: #ffffff;
+            --header-bg: rgba(13, 17, 23, 0.85);
+            --input-bg: rgba(0, 0, 0, 0.3);
+            --seg-bg: rgba(0, 0, 0, 0.25);
+            --soft-bg: rgba(255, 255, 255, 0.03);
+            --soft-bg-strong: rgba(255, 255, 255, 0.07);
+            --hover-bg: rgba(255, 255, 255, 0.1);
+            --shadow: rgba(0, 0, 0, 0.2);
+            --viewer-bg: #1b1f24;
             --border-radius-lg: 16px;
             --border-radius-md: 12px;
             --border-radius-sm: 8px;
@@ -36,6 +54,62 @@
             --spacing-md: 16px;
             --spacing-lg: 24px;
             --spacing-xl: 32px;
+        }
+
+        /* ライトテーマ（設定で「ライト」、または「自動」でスマホがライトモードのとき） */
+        :root[data-theme="light"] {
+            --bg-color: #f4f6f9;
+            --surface-color: rgba(255, 255, 255, 0.9);
+            --text-primary: #1f2328;
+            --text-secondary: #59636e;
+            --accent-primary: #0969da;
+            --accent-hover: #0550ae;
+            --accent-glow: rgba(9, 105, 218, 0.22);
+            --success-color: #1a7f37;
+            --success-glow: rgba(26, 127, 55, 0.18);
+            --warn-color: #bc4c00;
+            --warn-glow: rgba(188, 76, 0, 0.18);
+            --danger-color: #cf222e;
+            --border-color: rgba(31, 35, 40, 0.15);
+            --on-accent: #ffffff;
+            --accent-tint: rgba(9, 105, 218, 0.08);
+            --time-color: #1f2328;
+            --header-bg: rgba(244, 246, 249, 0.9);
+            --input-bg: #ffffff;
+            --seg-bg: rgba(31, 35, 40, 0.07);
+            --soft-bg: rgba(31, 35, 40, 0.025);
+            --soft-bg-strong: rgba(31, 35, 40, 0.06);
+            --hover-bg: rgba(31, 35, 40, 0.06);
+            --shadow: rgba(31, 35, 40, 0.08);
+            --viewer-bg: #e6e9ee;
+        }
+        @media (prefers-color-scheme: light) {
+            :root:not([data-theme="dark"]) {
+                --bg-color: #f4f6f9;
+                --surface-color: rgba(255, 255, 255, 0.9);
+                --text-primary: #1f2328;
+                --text-secondary: #59636e;
+                --accent-primary: #0969da;
+                --accent-hover: #0550ae;
+                --accent-glow: rgba(9, 105, 218, 0.22);
+                --success-color: #1a7f37;
+                --success-glow: rgba(26, 127, 55, 0.18);
+                --warn-color: #bc4c00;
+                --warn-glow: rgba(188, 76, 0, 0.18);
+                --danger-color: #cf222e;
+                --border-color: rgba(31, 35, 40, 0.15);
+                --on-accent: #ffffff;
+                --accent-tint: rgba(9, 105, 218, 0.08);
+                --time-color: #1f2328;
+                --header-bg: rgba(244, 246, 249, 0.9);
+                --input-bg: #ffffff;
+                --seg-bg: rgba(31, 35, 40, 0.07);
+                --soft-bg: rgba(31, 35, 40, 0.025);
+                --soft-bg-strong: rgba(31, 35, 40, 0.06);
+                --hover-bg: rgba(31, 35, 40, 0.06);
+                --shadow: rgba(31, 35, 40, 0.08);
+                --viewer-bg: #e6e9ee;
+            }
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -70,7 +144,7 @@
             border: 1px solid var(--border-color);
             border-radius: var(--border-radius-lg);
             padding: var(--spacing-lg);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 8px 32px var(--shadow);
         }
 
         .btn {
@@ -93,11 +167,11 @@
             width: 100%;
         }
 
-        .btn:hover { background: rgba(255, 255, 255, 0.1); border-color: var(--text-secondary); }
+        .btn:hover { background: var(--hover-bg); border-color: var(--text-secondary); }
 
         .btn-primary {
             background: var(--accent-primary);
-            color: #000;
+            color: var(--on-accent);
             border: none;
             box-shadow: 0 4px 12px var(--accent-glow);
         }
@@ -111,7 +185,7 @@
         .input-field {
             width: 100%;
             padding: var(--spacing-md);
-            background: rgba(0, 0, 0, 0.3);
+            background: var(--input-bg);
             border: 1px solid var(--border-color);
             border-radius: var(--border-radius-md);
             color: var(--text-primary);
@@ -128,7 +202,7 @@
             align-items: center;
             justify-content: space-between;
             border-bottom: 1px solid var(--border-color);
-            background: rgba(13, 17, 23, 0.8);
+            background: var(--header-bg);
             backdrop-filter: blur(8px);
             position: sticky;
             top: 0;
@@ -175,22 +249,22 @@
         .small { font-size: 0.8rem; }
 
         /* --- Countdown --- */
-        .seg { display: flex; gap: 4px; background: rgba(0,0,0,0.25); padding: 4px; border-radius: var(--border-radius-md); }
+        .seg { display: flex; gap: 4px; background: var(--seg-bg); padding: 4px; border-radius: var(--border-radius-md); }
         .seg button { flex: 1; padding: 8px 4px; border: none; border-radius: var(--border-radius-sm); cursor: pointer; background: transparent; color: var(--text-secondary); font: inherit; font-size: 0.85rem; }
-        .seg button.active { background: var(--accent-primary); color: #000; font-weight: 700; }
+        .seg button.active { background: var(--accent-primary); color: var(--on-accent); font-weight: 700; }
 
         .stop-picker { display: grid; grid-template-columns: 1fr auto; gap: 8px 10px; align-items: end; }
         .stop-picker label { display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 4px; }
         .swap-btn {
             grid-row: 1 / span 2; grid-column: 2; align-self: center;
             width: 48px; height: 48px; border-radius: 50%;
-            border: 1px solid var(--border-color); background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border-color); background: var(--soft-bg-strong);
             color: var(--accent-primary); font-size: 1.4rem; cursor: pointer;
         }
 
         .next-card { text-align: center; padding: 28px 20px; }
         .next-card .label { font-size: 0.85rem; color: var(--text-secondary); }
-        .time-display { font-size: 4rem; line-height: 1.1; font-weight: 700; color: white; margin: 8px 0 12px; font-variant-numeric: tabular-nums; }
+        .time-display { font-size: 4rem; line-height: 1.1; font-weight: 700; color: var(--time-color); margin: 8px 0 12px; font-variant-numeric: tabular-nums; }
         .time-display.long { font-size: 2.6rem; }
         .time-display.soon { color: var(--warn-color); }
         .time-display.now { color: var(--danger-color); }
@@ -210,16 +284,16 @@
         .trip-item {
             display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: center;
             padding: 12px 14px; border-radius: var(--border-radius-md);
-            border: 1px solid var(--border-color); background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-color); background: var(--soft-bg);
         }
         .trip-item .t { font-weight: 700; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
         .trip-item .t .arr { font-weight: 400; color: var(--text-secondary); font-size: 0.9rem; }
         .trip-item .remain { font-weight: 700; color: var(--accent-primary); text-align: right; font-variant-numeric: tabular-nums; }
         .trip-item .sub { font-size: 0.75rem; color: var(--text-secondary); }
         .trip-item .ride { font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color); background: transparent; color: var(--text-primary); cursor: pointer; font-family: inherit; justify-self: end; }
-        .trip-item.best { border-color: var(--accent-primary); background: rgba(88,166,255,0.12); }
+        .trip-item.best { border-color: var(--accent-primary); background: var(--accent-tint); }
         .trip-item.past { opacity: 0.55; }
-        .tag { display: inline-block; font-size: 0.7rem; font-weight: 700; padding: 1px 8px; border-radius: 10px; background: var(--accent-primary); color: #000; margin-left: 6px; vertical-align: 2px; }
+        .tag { display: inline-block; font-size: 0.7rem; font-weight: 700; padding: 1px 8px; border-radius: 10px; background: var(--accent-primary); color: var(--on-accent); margin-left: 6px; vertical-align: 2px; }
         .search-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; align-items: end; }
         .search-row label { display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 4px; }
         .search-row .input-field { padding: 8px 12px; height: 44px; }
@@ -232,13 +306,33 @@
         .tt-m { min-width: 64px; padding: 3px 6px; border-radius: 6px; border: 1px solid transparent; line-height: 1.25; font-variant-numeric: tabular-nums; }
         .tt-m b { font-size: 1.15rem; }
         .tt-m small { display: block; font-size: 0.7rem; color: var(--text-secondary); }
-        .tt-m.next { border-color: var(--accent-primary); background: rgba(88,166,255,0.12); }
+        .tt-m.next { border-color: var(--accent-primary); background: var(--accent-tint); }
         .tt-m.past { opacity: 0.6; }
         .tt-m.past b { font-weight: 400; }
-        .tt-mark { font-size: 0.7rem; color: var(--text-secondary); margin-right: 1px; vertical-align: 3px; }
+        .tt-mark { font-size: 0.7rem; color: var(--text-secondary); margin-left: 2px; vertical-align: 5px; }
+
+        /* --- よく使う区間 --- */
+        .fav-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+        .fav-chips:empty { display: none; }
+        .chip {
+            padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border-color);
+            background: var(--soft-bg-strong); color: var(--text-primary); font: inherit; font-size: 0.85rem; cursor: pointer;
+        }
+        .chip.active { border-color: var(--accent-primary); background: var(--accent-tint); color: var(--accent-primary); font-weight: 700; }
+        .chip.add { border-style: dashed; color: var(--text-secondary); background: transparent; }
+
+        /* --- 設定 --- */
+        .settings-item { display: grid; gap: 8px; }
+        .settings-item + .settings-item { margin-top: 20px; }
+        .settings-label { font-weight: 700; }
+        .fav-row { display: grid; grid-template-columns: 1fr auto auto; gap: 6px; align-items: center; padding: 10px 0; border-top: 1px solid var(--border-color); }
+        .fav-row:first-child { border-top: none; }
+        .fav-row .sub { font-size: 0.75rem; color: var(--text-secondary); }
+        .mini-btn { padding: 6px 10px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: transparent; color: var(--text-primary); font: inherit; font-size: 0.8rem; cursor: pointer; }
+        .mini-btn.danger { color: var(--danger-color); }
         .day-sep { font-size: 0.75rem; color: var(--text-secondary); padding: 6px 2px 0; }
 
-        .progress { height: 8px; border-radius: 4px; background: rgba(255,255,255,0.08); overflow: hidden; margin: 16px 0 4px; }
+        .progress { height: 8px; border-radius: 4px; background: var(--soft-bg-strong); overflow: hidden; margin: 16px 0 4px; }
         .progress > div { height: 100%; background: var(--accent-primary); transition: width 1s linear; }
 
         /* --- PDF list --- */
@@ -247,16 +341,16 @@
         .pdf-actions .btn { padding: 12px 8px; }
 
         /* --- PDF viewer (full screen) --- */
-        .viewer { position: fixed; inset: 0; z-index: 50; background: #1b1f24; display: flex; flex-direction: column; }
+        .viewer { position: fixed; inset: 0; z-index: 50; background: var(--viewer-bg); display: flex; flex-direction: column; }
         .viewer-bar {
             display: flex; align-items: center; gap: 6px;
             padding: 8px; padding-top: max(8px, env(safe-area-inset-top));
-            background: rgba(13,17,23,0.95); border-bottom: 1px solid var(--border-color);
+            background: var(--header-bg); border-bottom: 1px solid var(--border-color);
         }
         .viewer-title { flex: 1; min-width: 0; font-weight: 600; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .icon-btn {
             min-width: 44px; height: 40px; padding: 0 10px; border-radius: var(--border-radius-sm);
-            border: 1px solid var(--border-color); background: rgba(255,255,255,0.06);
+            border: 1px solid var(--border-color); background: var(--soft-bg-strong);
             color: var(--text-primary); font: inherit; font-size: 1.05rem; cursor: pointer;
         }
         .icon-btn.zoom-label { font-size: 0.85rem; min-width: 60px; font-variant-numeric: tabular-nums; }
@@ -279,7 +373,7 @@
         <!-- Persistent Header (hidden on Home) -->
         <header id="main-header" class="app-header hidden">
             <div class="header-title" onclick="router.navigate('home')">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6 2 7"/><path d="M10 6h4"/><path d="m22 7-2-1"/><rect width="16" height="16" x="4" y="3" rx="2"/><path d="M4 11h16"/><path d="M8 15h.01"/><path d="M16 15h.01"/><path d="M6 19v2"/><path d="M18 21v-2"/></svg>
                 TimelyBus
             </div>
         </header>
@@ -474,7 +568,7 @@
         };
         // @@TIMETABLE_END
 
-        const APP_VERSION = '1.3.1';
+        const APP_VERSION = '1.4.0';
 
         const PDF_FILES = [
             { name: 'a1_naruto_weekday.pdf', label: '鳴門線 平日' },
@@ -569,6 +663,21 @@
             tickId: null,
             lastSignature: ''
         };
+
+        // よく使う区間 [{ name, from, to }]
+        state.favorites = (store.get('favorites', []) || []).filter(f =>
+            f && typeof f.name === 'string' && STOPS[f.from] && STOPS[f.to] && f.from !== f.to);
+
+        // 表示テーマ: 'auto'（スマホの設定に合わせる） / 'light' / 'dark'
+        const applyTheme = (theme) => {
+            const root = document.documentElement;
+            if (theme === 'light' || theme === 'dark') root.dataset.theme = theme;
+            else delete root.dataset.theme;
+            const dark = theme === 'dark' || (theme !== 'light' && !window.matchMedia('(prefers-color-scheme: light)').matches);
+            document.querySelector('meta[name="theme-color"]').content = dark ? '#0d1117' : '#f4f6f9';
+        };
+        applyTheme(store.get('theme', 'auto'));
+        window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => applyTheme(store.get('theme', 'auto')));
 
         // 乗車中モードは到着から30分経ったら自動で終了
         if (state.riding && Date.now() > state.riding.arrMs + 30 * 60000) {
@@ -673,6 +782,7 @@
             if (page.name === 'home') renderHome(root);
             else if (page.name === 'countdown') renderCountdown(root);
             else if (page.name === 'pdf') renderPdfList(root);
+            else if (page.name === 'settings') renderSettings(root);
             else if (page.name === 'view') viewer.open(root, page.arg);
             window.scrollTo(0, 0);
         };
@@ -681,18 +791,56 @@
             const last = PDF_FILES.find(p => p.name === store.get('lastPdf', ''));
             root.innerHTML = `
                 <div class="glass-card" style="text-align: center; margin-top: 32px;">
-                    <div style="width: 88px; height: 88px; border-radius: 20px; background: var(--accent-primary); color: #000; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;">
-                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>
-                    </div>
+                    <img src="./icon.png" alt="" width="88" height="88" style="display: block; border-radius: 20px; margin: 0 auto 24px; box-shadow: 0 6px 18px var(--shadow);">
                     <h1 style="font-size: 2.2rem; margin-bottom: 8px;">TimelyBus</h1>
                     <p class="muted" style="margin-bottom: 32px;">徳島バス 時刻表・カウントダウン</p>
                     <div style="display: grid; gap: 12px;">
                         <button class="btn btn-primary" onclick="router.navigate('countdown')">バスを調べる・カウントダウン</button>
                         ${last ? `<button class="btn" onclick="router.navigate('view', '${last.name}')">前回の時刻表を開く（${esc(last.label)}）</button>` : ''}
                         <button class="btn" onclick="router.navigate('pdf')">時刻表PDFを見る</button>
+                        <button class="btn" onclick="router.navigate('settings')">設定</button>
                     </div>
                 </div>
                 <p class="small" style="text-align: center; color: var(--text-secondary); opacity: 0.6;">v${APP_VERSION}</p>
+            `;
+        };
+
+        const isCurrentRoute = (f) => f.from === state.from && f.to === state.to;
+
+        const favChipsHtml = () => {
+            const saved = state.favorites.some(isCurrentRoute);
+            return state.favorites.map((f, i) =>
+                `<button class="chip ${isCurrentRoute(f) ? 'active' : ''}" onclick="actions.applyFav(${i})">${esc(f.name)}</button>`).join('')
+                + (saved || state.from === state.to ? '' : `<button class="chip add" onclick="actions.addFav()">＋ この区間を登録</button>`);
+        };
+
+        const renderSettings = (root) => {
+            const theme = store.get('theme', 'auto');
+            const favs = state.favorites;
+            root.innerHTML = `
+                <h2>設定</h2>
+                <div class="glass-card">
+                    <div class="settings-item">
+                        <div class="settings-label">画面の明るさ</div>
+                        <div class="seg">
+                            <button class="${theme === 'auto' ? 'active' : ''}" onclick="actions.setTheme('auto')">自動</button>
+                            <button class="${theme === 'light' ? 'active' : ''}" onclick="actions.setTheme('light')">ライト</button>
+                            <button class="${theme === 'dark' ? 'active' : ''}" onclick="actions.setTheme('dark')">ダーク</button>
+                        </div>
+                        <div class="small muted">「自動」はスマホの設定（ライト／ダーク）に合わせます。屋外ではライトが見やすくなります。</div>
+                    </div>
+                </div>
+                <div class="glass-card">
+                    <div class="settings-label" style="margin-bottom: 6px;">よく使う区間</div>
+                    ${favs.length ? `<div>${favs.map((f, i) => `
+                        <div class="fav-row">
+                            <div><div>${esc(f.name)}</div><div class="sub">${esc(STOPS[f.from])} → ${esc(STOPS[f.to])}</div></div>
+                            <button class="mini-btn" onclick="actions.renameFav(${i})">名前変更</button>
+                            <button class="mini-btn danger" onclick="actions.deleteFav(${i})">削除</button>
+                        </div>`).join('')}</div>`
+                    : `<p class="small muted">まだ登録がありません。「バスを調べる」画面の「＋ この区間を登録」から追加できます。</p>`}
+                </div>
+                <p class="small" style="text-align: center; color: var(--text-secondary); opacity: 0.6;">TimelyBus v${APP_VERSION}</p>
             `;
         };
 
@@ -713,6 +861,7 @@
                     <button class="${state.mode === 'table' ? 'active' : ''}" onclick="actions.setMode('table')">時刻表</button>
                 </div>
                 <div class="glass-card" style="padding: 18px;">
+                    <div class="fav-chips" id="fav-chips">${favChipsHtml()}</div>
                     <div class="stop-picker">
                         <div>
                             <label for="from-stop">乗車</label>
@@ -775,7 +924,7 @@
                         <span>${dayPrefix(next.offset)}${fmtHM(next.dep)} 発</span><span class="arrow">→</span><span>${fmtHM(next.arr)} 着</span>
                     </div>
                     <div class="trip-meta">所要 ${next.arr - next.dep}分 ・ 行先番号 ${esc(next.no)} ・ ${esc(MARKS[next.mark] || '')}</div>
-                    <button class="btn" style="margin-top: 20px;" onclick="actions.ride('${next.id}')">このバスに乗る（到着までカウント）</button>
+                    <button class="btn" style="margin-top: 20px;" onclick="actions.ride('${next.id}')">このバスに乗る</button>
                 </div>
                 ${rest.length ? `
                 <div>
@@ -881,7 +1030,7 @@
                                 <div class="tt-mins">
                                     ${hs.map(t => `
                                         <div class="tt-m ${t === next ? 'next' : ''} ${isToday && t.dep < nowMin ? 'past' : ''}">
-                                            <b>${t.mark ? `<span class="tt-mark">${t.mark}</span>` : ''}${String(t.dep % 60).padStart(2, '0')}</b>
+                                            <b>${String(t.dep % 60).padStart(2, '0')}</b><span class="tt-mark">${t.mark}</span>
                                             <small>→${fmtHM(t.arr)}</small>
                                         </div>`).join('')}
                                 </div>
@@ -1322,7 +1471,7 @@
         const router = {
             current: () => {
                 const [name, arg] = location.hash.replace(/^#/, '').split('/');
-                if (['countdown', 'pdf', 'view'].includes(name)) return { name, arg: arg ? decodeURIComponent(arg) : null };
+                if (['countdown', 'pdf', 'view', 'settings'].includes(name)) return { name, arg: arg ? decodeURIComponent(arg) : null };
                 return { name: 'home', arg: null };
             },
             navigate: (page, arg, replace) => {
@@ -1366,8 +1515,52 @@
             },
             saveRoute: () => {
                 store.set('route', { from: state.from, to: state.to });
+                actions.refreshFavChips();
                 if (state.riding) actions.endRide();
                 else tick();
+            },
+            refreshFavChips: () => {
+                const el = document.getElementById('fav-chips');
+                if (el) el.innerHTML = favChipsHtml();
+            },
+            applyFav: (i) => {
+                const f = state.favorites[i];
+                if (!f) return;
+                state.from = f.from;
+                state.to = f.to;
+                document.getElementById('from-stop').value = state.from;
+                document.getElementById('to-stop').value = state.to;
+                actions.saveRoute();
+            },
+            saveFavorites: () => store.set('favorites', state.favorites),
+            addFav: () => {
+                const fallback = `${STOPS[state.from]}→${STOPS[state.to]}`;
+                const name = window.prompt('この区間の名前（例：通勤 行き）', fallback);
+                if (name === null) return;
+                state.favorites.push({ name: name.trim().slice(0, 20) || fallback, from: state.from, to: state.to });
+                actions.saveFavorites();
+                actions.refreshFavChips();
+            },
+            renameFav: (i) => {
+                const f = state.favorites[i];
+                if (!f) return;
+                const name = window.prompt('新しい名前', f.name);
+                if (name === null || !name.trim()) return;
+                f.name = name.trim().slice(0, 20);
+                actions.saveFavorites();
+                render();
+            },
+            deleteFav: (i) => {
+                const f = state.favorites[i];
+                if (!f || !window.confirm(`「${f.name}」を削除しますか？`)) return;
+                state.favorites.splice(i, 1);
+                actions.saveFavorites();
+                render();
+            },
+            setTheme: (t) => {
+                store.set('theme', t);
+                applyTheme(t);
+                render();
             },
             setDay: (d) => { state.dayOverride = d; render(); },
             setMode: (m) => {
